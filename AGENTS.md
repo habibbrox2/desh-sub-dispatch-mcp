@@ -71,3 +71,5 @@ If a release is broken:
 ---
 
 > Every production deployment MUST follow this checklist. No exceptions.
+
+> **Live deployment**: https://deshdsp.fly.dev  (MCP: https://deshdsp.fly.dev/mcp)

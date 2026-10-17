@@ -27,3 +27,9 @@ For HTTP transport:
 ```
 
 Then use tools like `register_agent_from_skill` with `skillId=claude-coder`.
+
+
+## Live deployment
+
+Hosted MCP endpoint: https://deshdsp.fly.dev/mcp
+Health: https://deshdsp.fly.dev/health

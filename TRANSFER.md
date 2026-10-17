@@ -90,3 +90,8 @@ node dist/server.bundle.cjs --print-config
 ---
 
 > **নোট**: বান্ডল ফাইল (`server.bundle.cjs`) সম্পূর্ণ self-contained, তাই শুধু এই একটি ফাইল কপি করলেও চলবে (Node.js থাকলে)।
+
+## 11. Hosted (Fly.io) deployment
+
+Live MCP endpoint: https://deshdsp.fly.dev/mcp
+Health check: https://deshdsp.fly.dev/health

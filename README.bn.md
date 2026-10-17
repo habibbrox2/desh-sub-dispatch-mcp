@@ -9,7 +9,7 @@
 
 ---
 
-> 🌐 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/)
+> 🌐 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/) | [Live (Fly.io)](https://deshdsp.fly.dev)
 
 ## ✨ বৈশিষ্ট্যসমূহ
 

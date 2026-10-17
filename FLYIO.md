@@ -76,17 +76,17 @@ fly deploy
 ```bash
 fly status
 fly logs
-curl https://desh-sub-dispatch.fly.dev/health
+curl https://deshdsp.fly.dev/health
 ```
 
 ## 10. URL
 
 আপনার সার্ভার এখন লাইভ:
 ```
-https://desh-sub-dispatch.fly.dev
+https://deshdsp.fly.dev
 ```
 
-MCP endpoint: `https://desh-sub-dispatch.fly.dev/mcp`
+MCP endpoint: `https://deshdsp.fly.dev/mcp`
 
 ## 11. আপডেট ডেপ্লয়
 
