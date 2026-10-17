@@ -64,6 +64,14 @@ const DISPATCH = { readOnlyHint: false, destructiveHint: true, idempotentHint: f
 // validation, so opaque objects use a passthrough ZodObject instead)
 const obj = z.object({}).passthrough();
 const listOut = { items: z.array(z.any()), total: z.number() };
+const pagedOut = {
+  items: z.array(z.any()).describe("Rows for this page"),
+  total: z.number().describe("Total matches before pagination"),
+  limit: z.number().describe("Page size used"),
+  offset: z.number().describe("Rows skipped from the start"),
+};
+const limitParam = z.number().int().positive().max(500).optional().describe("Max rows to return (default 50, max 500)");
+const offsetParam = z.number().int().nonnegative().optional().describe("Rows to skip for pagination (default 0)");
 
 export function registerTools(server: McpServer, dispatcher: Dispatcher) {
   server.registerTool("register_agent", {
@@ -101,15 +109,20 @@ export function registerTools(server: McpServer, dispatcher: Dispatcher) {
 
   server.registerTool("list_agents", {
     title: "List agents",
-    description: "List registered agents, optionally filtered by kind or tag. Returns every agent (no default cap).",
+    description: "List registered agents, newest first, optionally filtered by kind or tag. Paginated (default limit 50, max 500) with a stable total.",
     inputSchema: {
       kind: z.string().optional().describe("Filter by agent kind: llm | process | http"),
       tag: z.string().optional().describe("Filter by an exact tag"),
+      limit: limitParam,
+      offset: offsetParam,
     },
-    outputSchema: listOut,
+    outputSchema: pagedOut,
     annotations: READ,
-  }, async (filter: any) => {
-    return okRows(dispatcher.registry.list(filter));
+  }, async ({ kind, tag, limit, offset }: any) => {
+    const all = dispatcher.registry.list({ kind, tag });
+    const lim = Math.min(limit ?? 50, 500);
+    const off = offset ?? 0;
+    return ok({ items: all.slice(off, off + lim), total: all.length, limit: lim, offset: off });
   });
 
   server.registerTool("get_agent", {
@@ -272,18 +285,20 @@ export function registerTools(server: McpServer, dispatcher: Dispatcher) {
 
   server.registerTool("list_tasks", {
     title: "List tasks",
-    description: "List tasks, newest first, optionally filtered by status or agent. Returns every match (no default cap).",
+    description: "List tasks, newest first, optionally filtered by status or agent. Paginated (default limit 50, max 500) with a stable total.",
     inputSchema: {
       status: z.string().optional().describe("Filter by status: pending | queued | running | retrying | succeeded | failed | cancelled"),
       agentId: z.string().optional().describe("Filter by agent id"),
-      limit: z.number().int().positive().optional().describe("Return at most this many tasks"),
+      limit: limitParam,
+      offset: offsetParam,
     },
-    outputSchema: listOut,
+    outputSchema: pagedOut,
     annotations: READ,
-  }, async (filter: any) => {
-    let tasks = dispatcher.store.list(filter);
-    if (filter.limit) tasks = tasks.slice(0, filter.limit);
-    return okRows(tasks.map((t) => ({ id: t.id, agentId: t.agentId, status: t.status, priority: t.priority, createdAt: t.createdAt })));
+  }, async ({ status, agentId, limit, offset }: any) => {
+    const rows = dispatcher.store.list({ status, agentId }).map((t) => ({ id: t.id, agentId: t.agentId, status: t.status, priority: t.priority, createdAt: t.createdAt }));
+    const lim = Math.min(limit ?? 50, 500);
+    const off = offset ?? 0;
+    return ok({ items: rows.slice(off, off + lim), total: rows.length, limit: lim, offset: off });
   });
 
   server.registerTool("get_dispatcher_stats", {

@@ -116,6 +116,57 @@ describe("tool metadata", () => {
   });
 });
 
+describe("list pagination", () => {
+  async function registerN(client: any, n: number) {
+    for (let i = 1; i <= n; i++) {
+      await client.callTool({ name: "register_agent", arguments: { name: `pag-${i}`, config: { kind: "process", command: "node" } } });
+    }
+  }
+
+  it("list_agents pages with limit/offset, stable total", async () => {
+    const { client } = await openSession();
+    await registerN(client, 7);
+    const p: any = await client.callTool({ name: "list_agents", arguments: { limit: 3, offset: 3 } });
+    expect(p.structuredContent.items.length).toBe(3);
+    expect(p.structuredContent.total).toBe(7);
+    expect(p.structuredContent.limit).toBe(3);
+    expect(p.structuredContent.offset).toBe(3);
+
+    const past: any = await client.callTool({ name: "list_agents", arguments: { offset: 100 } });
+    expect(past.structuredContent.items).toEqual([]);
+    expect(past.structuredContent.total).toBe(7);
+
+    const def: any = await client.callTool({ name: "list_agents", arguments: {} });
+    expect(def.structuredContent.limit).toBe(50);
+    expect(def.structuredContent.items.length).toBe(7);
+  });
+
+  it("list_tasks pages and keeps its filters", async () => {
+    const { client } = await openSession();
+    const reg: any = await client.callTool({ name: "register_agent", arguments: { name: "t-agent", config: { kind: "process", command: "node", args: ["-e", "process.stdout.write('ok')"] } } });
+    const agentId = reg.structuredContent.id;
+    for (let i = 0; i < 4; i++) {
+      await client.callTool({ name: "dispatch_task", arguments: { agentId, input: `t${i}` } });
+    }
+    const p: any = await client.callTool({ name: "list_tasks", arguments: { limit: 2, offset: 2 } });
+    expect(p.structuredContent.items.length).toBe(2);
+    expect(p.structuredContent.total).toBe(4);
+    expect(p.structuredContent.items[0]).toHaveProperty("status");
+
+    const filtered: any = await client.callTool({ name: "list_tasks", arguments: { agentId } });
+    expect(filtered.structuredContent.total).toBe(4);
+    expect(filtered.structuredContent.items.every((x: any) => x.agentId === agentId)).toBe(true);
+  });
+
+  it("advertises the limit ceiling in the input schema", async () => {
+    const { client } = await openSession();
+    const { tools } = await client.listTools();
+    const la = tools.find((t) => t.name === "list_agents")!;
+    expect((la.inputSchema as any).properties.limit.maximum).toBe(500);
+    expect((la.inputSchema as any).properties.offset.minimum).toBe(0);
+  });
+});
+
 describe("prompts", () => {
   it("lists the three advertised prompts", async () => {
     const { client } = await openSession();
