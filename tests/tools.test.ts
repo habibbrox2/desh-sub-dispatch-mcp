@@ -116,6 +116,30 @@ describe("tool metadata", () => {
   });
 });
 
+describe("prompts", () => {
+  it("lists the three advertised prompts", async () => {
+    const { client } = await openSession();
+    const { prompts } = await client.listPrompts();
+    expect(prompts.map((p) => p.name).sort()).toEqual(["dag-workflow", "dispatch-task", "monitor-fleet"]);
+  });
+
+  it("dispatch-task prompt returns a recipe using this server's tools", async () => {
+    const { client } = await openSession();
+    const r = await client.getPrompt({ name: "dispatch-task", arguments: { goal: "summarize a README" } });
+    const text = r.messages.map((m: any) => m.content.text ?? "").join(" ");
+    expect(text).toContain("dispatch_task");
+    expect(text).toContain("get_task_result");
+    expect(text).toContain("summarize a README");
+  });
+
+  it("monitor-fleet prompt needs no arguments", async () => {
+    const { client } = await openSession();
+    const r = await client.getPrompt({ name: "monitor-fleet", arguments: {} });
+    expect(r.messages.length).toBeGreaterThan(0);
+    expect(r.messages.map((m: any) => m.content.text ?? "").join(" ")).toContain("get_dispatcher_stats");
+  });
+});
+
 describe("actionable errors", () => {
   it("dispatch_task rejects an unknown agent with a hint", async () => {
     const { client } = await openSession();

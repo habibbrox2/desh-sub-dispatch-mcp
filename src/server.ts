@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Dispatcher } from "./dispatcher/dispatcher.js";
 import { registerTools } from "./tools/register.js";
+import { registerPrompts } from "./tools/prompts.js";
 
 export interface CreateServerOptions {
   maxConcurrency?: number;
@@ -18,5 +19,6 @@ export function createServer(opts?: CreateServerOptions) {
     { capabilities: { tools: {}, resources: {}, prompts: {} }, instructions: "Hybrid sub-agent dispatcher. Register agents (llm/process/http) or use skills, then dispatch tasks with orchestration." }
   );
   registerTools(server, dispatcher);
+  registerPrompts(server);
   return { server, dispatcher };
 }
