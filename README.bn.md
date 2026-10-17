@@ -22,6 +22,198 @@
 
 ---
 
+## 🔌 কনফিগারেশন
+
+### Public MCP Endpoint (No Auth — সবার জন্য ফ্রি)
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Local stdio
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "command": "node",
+      "args": ["/path/to/dist/server.bundle.cjs"]
+    }
+  }
+}
+```
+
+### Local HTTP
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+---
+
+## 📦 অন্যান্য MCP Host-এ ইনস্টল
+
+### Cursor
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Claude Desktop / Claude Code
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### OpenCode
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Windsurf
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Zed
+
+```json
+{
+  "context_servers": {
+    "DeshSubDispatch": {
+      "server": {
+        "type": "http",
+        "url": "https://deshdsp.fly.dev/mcp"
+      }
+    }
+  }
+}
+```
+
+### GitHub Copilot CLI
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### GitHub Copilot in IDEs (JetBrains, Visual Studio, Eclipse, Xcode)
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Codex (OpenAI)
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Rovo Dev CLI
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### VS Code
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+### Cline / Continue
+
+```json
+{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+---
+
 ## ⚡ Quick Start
 
 ```bash
@@ -37,38 +229,6 @@ TRANSPORT=http PORT=3000 node dist/server.bundle.cjs
 
 # Ready-to-paste config
 node dist/server.bundle.cjs --print-config
-```
-
----
-
-## 🔌 যেকোনো Coding Agent-এর সাথে কানেক্ট
-
-Cursor, Windsurf, Cline, Continue, Zed, VS Code, Claude Code, OpenCode সহ আরও অনেক অ্যাপে কাজ করে।
-
-stdio config:
-
-```json
-{
-  "mcpServers": {
-    "DeshSubDispatch": {
-      "command": "node",
-      "args": ["/path/to/dist/server.bundle.cjs"]
-    }
-  }
-}
-```
-
-HTTP mode (endpoints: `/mcp`, `/sse`, `/messages`, `/health`):
-
-```json
-{
-  "mcpServers": {
-    "DeshSubDispatch": {
-      "type": "http",
-      "url": "http://localhost:3000/mcp"
-    }
-  }
-}
 ```
 
 ---
@@ -92,7 +252,13 @@ HTTP mode (endpoints: `/mcp`, `/sse`, `/messages`, `/health`):
 
 ## Live Deployment
 
-Hosted MCP endpoint: `https://deshdsp.fly.dev/mcp` (health: `https://deshdsp.fly.dev/health`)
+| Endpoint | URL |
+|----------|-----|
+| MCP | `https://deshdsp.fly.dev/mcp` |
+| Health | `https://deshdsp.fly.dev/health` |
+| Homepage | `https://deshdsp.fly.dev` |
+| GitHub Pages | `https://habibbrox2.github.io/desh-sub-dispatch-mcp/` |
+| GitHub Release | `https://github.com/habibbrox2/desh-sub-dispatch-mcp/releases/tag/v0.2.0` |
 
 ---
 
