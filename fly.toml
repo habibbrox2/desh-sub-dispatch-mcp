@@ -1,0 +1,22 @@
+app = "desh-sub-dispatch"
+primary_region = "sin"
+
+[build]
+  [build.args]
+    NODE_VERSION = "22"
+
+[env]
+  TRANSPORT = "http"
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -1,0 +1,30 @@
+{
+  "name": "desh-sub-dispatch-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that dispatches tasks to hybrid sub-agents (LLM, process, HTTP) with full orchestration",
+  "type": "module",
+  "main": "dist/server.bundle.cjs",
+  "bin": {
+    "sub-agent-dispatcher-mcp": "dist/server.bundle.cjs"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && npm run bundle",
+    "bundle": "npx esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/server.bundle.cjs --target=node22 --banner:js=\"#!/usr/bin/env node\" && node -e \"try{require(\"fs\").chmodSync(\"dist/server.bundle.cjs\",0o755)}catch(e){}\"",
+    "start": "node dist/server.bundle.cjs",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "express": "^5.1.0",
+    "uuid": "^11.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^5.0.5"
+  }
+}
