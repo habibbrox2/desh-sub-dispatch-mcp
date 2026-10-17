@@ -21,6 +21,15 @@ export class Dispatcher {
         this.skills = new SkillRegistry();
         this.maxConcurrency = opts.maxConcurrency ?? 4;
     }
+    /** Public snapshot of dispatcher state (used by get_dispatcher_stats). */
+    getStats() {
+        return {
+            maxConcurrency: this.maxConcurrency,
+            active: this.active,
+            tasks: this.store.size(),
+            agents: this.registry.list().length,
+        };
+    }
     onTaskChange(cb) {
         this.listeners.add(cb);
         return () => this.listeners.delete(cb);
