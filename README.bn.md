@@ -268,15 +268,29 @@ node dist/server.bundle.cjs --print-config
 |------|-------------|
 | `register_agent` | Register a new agent |
 | `unregister_agent` | Remove a registered agent |
-| `list_agents` / `get_agent` | List / inspect agents |
+| `list_agents` / `get_agent` | List (pagination: `limit`/`offset`, default 50, max 500) / inspect agents |
 | `dispatch_task` | Dispatch a single task |
 | `dispatch_batch` | Dispatch multiple tasks at once |
 | `dispatch_workflow` | DAG workflow |
 | `get_task_status` / `get_task_result` | Status & result (with wait support) |
 | `cancel_task` / `retry_task` | Cancel & retry |
-| `list_tasks` / `get_dispatcher_stats` | Task list & stats |
+| `list_tasks` / `get_dispatcher_stats` | Task list (pagination: `limit`/`offset`) ও dispatcher stats |
 | `list_skills` / `get_skill` | List / inspect skills |
 | `register_agent_from_skill` | Create an agent from a skill preset |
+
+Tool results JSON text এবং `structuredContent` — দুটোভাবেই আসে, এবং output schema দিয়ে validate হয়।
+
+---
+
+## 💬 Prompts
+
+`prompts/list`-এ তিনটি MCP prompt আছে — এই সার্ভার কীভাবে ব্যবহার করতে হয় সেগুলো দেখায়:
+
+| Prompt | Arguments | কী করে |
+|--------|-----------|--------|
+| `dispatch-task` | `goal` | Skill বেছে নেওয়া → agent register → `dispatch_task` → `get_task_result` দিয়ে অপেক্ষা |
+| `dag-workflow` | `workflow` | কাজকে DAG-এ ভাগ → `dispatch_workflow` → প্রতিটি node ট্র্যাক, প্রয়োজনে retry/cancel |
+| `monitor-fleet` | (নেই) | `get_dispatcher_stats` → আটকে/ব্যর্থ task খোঁজা → `retry_task` / `cancel_task` |
 
 ---
 

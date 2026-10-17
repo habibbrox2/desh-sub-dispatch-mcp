@@ -268,15 +268,29 @@ This MCP server works out of the box without any API key. Process agents and HTT
 |------|-------------|
 | `register_agent` | Register a new agent |
 | `unregister_agent` | Remove a registered agent |
-| `list_agents` / `get_agent` | List / inspect agents |
+| `list_agents` / `get_agent` | List (paginated: `limit`/`offset`, default 50, max 500) / inspect agents |
 | `dispatch_task` | Dispatch a single task |
 | `dispatch_batch` | Dispatch multiple tasks at once |
 | `dispatch_workflow` | DAG workflow |
 | `get_task_status` / `get_task_result` | Status & result (with wait support) |
 | `cancel_task` / `retry_task` | Cancel & retry |
-| `list_tasks` / `get_dispatcher_stats` | Task list & stats |
+| `list_tasks` / `get_dispatcher_stats` | Task list (paginated: `limit`/`offset`) & dispatcher stats |
 | `list_skills` / `get_skill` | List / inspect skills |
 | `register_agent_from_skill` | Create an agent from a skill preset |
+
+Tool results are returned both as JSON text and as `structuredContent`, validated against declared output schemas.
+
+---
+
+## 💬 Prompts
+
+Three MCP prompts (via `prompts/list`) teach the client how to drive this server:
+
+| Prompt | Arguments | What it does |
+|--------|-----------|--------------|
+| `dispatch-task` | `goal` | Pick a skill → register an agent → `dispatch_task` → wait with `get_task_result` |
+| `dag-workflow` | `workflow` | Split work into a DAG → `dispatch_workflow` → track each node, retry/cancel as needed |
+| `monitor-fleet` | (none) | `get_dispatcher_stats` → find stuck/failed tasks → `retry_task` / `cancel_task` |
 
 ---
 
