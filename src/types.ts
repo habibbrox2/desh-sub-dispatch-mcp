@@ -9,6 +9,7 @@ export interface LlmAgentConfig {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  enableTools?: boolean;
 }
 
 export interface ProcessAgentConfig {

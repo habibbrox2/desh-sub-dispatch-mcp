@@ -48453,63 +48453,108 @@ async function runHttp(agent, input, ctx) {
 }
 async function runLlm(agent, input, ctx) {
   const cfg = agent.config;
-  const prompt = typeof input === "string" ? input : JSON.stringify(input);
+  const images = typeof input === "object" && input !== null ? input.images ?? [] : [];
+  const prompt = typeof input === "string" ? input : input?.text ?? JSON.stringify(input);
   const provider = cfg.provider;
   const apiKey = cfg.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? process.env.GEMINI_API_KEY ?? process.env.MISTRAL_API_KEY ?? process.env.COHERE_API_KEY;
   if (provider === "anthropic") {
     const baseUrl2 = cfg.baseUrl ?? "https://api.anthropic.com";
-    const res2 = await fetch(`${baseUrl2}/v1/messages`, {
+    const res = await fetch(`${baseUrl2}/v1/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey ?? "", "anthropic-version": "2023-06-01" },
       body: JSON.stringify({ model: cfg.model, max_tokens: cfg.maxTokens ?? 1024, temperature: cfg.temperature ?? 0.7, system: cfg.systemPrompt, messages: [{ role: "user", content: prompt }] }),
       signal: ctx.signal
     });
-    if (!res2.ok) throw new Error(`Anthropic ${res2.status}: ${await res2.text()}`);
-    const data2 = await res2.json();
-    return { text: data2?.content?.[0]?.text, raw: data2 };
+    if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    return { text: data?.content?.[0]?.text, raw: data };
   }
   if (provider === "gemini") {
     const baseUrl2 = cfg.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta";
-    const res2 = await fetch(`${baseUrl2}/models/${cfg.model}:generateContent?key=${apiKey}`, {
+    const res = await fetch(`${baseUrl2}/models/${cfg.model}:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: cfg.systemPrompt ? { parts: [{ text: cfg.systemPrompt }] } : void 0 }),
       signal: ctx.signal
     });
-    if (!res2.ok) throw new Error(`Gemini ${res2.status}: ${await res2.text()}`);
-    const data2 = await res2.json();
-    return { text: data2?.candidates?.[0]?.content?.parts?.[0]?.text, raw: data2 };
+    if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    return { text: data?.candidates?.[0]?.content?.parts?.[0]?.text, raw: data };
   }
   if (provider === "cohere") {
     const baseUrl2 = cfg.baseUrl ?? "https://api.cohere.ai/v1";
-    const res2 = await fetch(`${baseUrl2}/chat`, {
+    const res = await fetch(`${baseUrl2}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ model: cfg.model, message: prompt, preamble: cfg.systemPrompt, temperature: cfg.temperature ?? 0.7 }),
       signal: ctx.signal
     });
-    if (!res2.ok) throw new Error(`Cohere ${res2.status}: ${await res2.text()}`);
-    const data2 = await res2.json();
-    return { text: data2?.text, raw: data2 };
+    if (!res.ok) throw new Error(`Cohere ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    return { text: data?.text, raw: data };
   }
   const baseUrl = cfg.baseUrl ?? (provider === "mistral" ? "https://api.mistral.ai/v1" : provider === "ollama" ? "http://localhost:11434/v1" : provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434/v1");
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...apiKey ? { Authorization: `Bearer ${apiKey}` } : {} },
-    body: JSON.stringify({
-      model: cfg.model,
-      temperature: cfg.temperature ?? 0.7,
-      max_tokens: cfg.maxTokens,
-      messages: [
-        ...cfg.systemPrompt ? [{ role: "system", content: cfg.systemPrompt }] : [],
-        { role: "user", content: prompt }
-      ]
-    }),
-    signal: ctx.signal
-  });
-  if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return { text: data?.choices?.[0]?.message?.content, raw: data };
+  const tools = cfg.enableTools ? [
+    { type: "function", function: { name: "get_time", description: "Get current ISO time", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "run_shell", description: "Run a shell command and return output", parameters: { type: "object", properties: { command: { type: "string" } }, required: ["command"] } } },
+    { type: "function", function: { name: "http_get", description: "HTTP GET a URL", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } }
+  ] : void 0;
+  const userContent = images.length ? [{ type: "text", text: prompt }, ...images.map((u) => ({ type: "image_url", image_url: { url: u } }))] : prompt;
+  const messages = [
+    ...cfg.systemPrompt ? [{ role: "system", content: cfg.systemPrompt }] : [],
+    { role: "user", content: userContent }
+  ];
+  let lastData = null;
+  for (let i = 0; i < 5; i++) {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...apiKey ? { Authorization: `Bearer ${apiKey}` } : {} },
+      body: JSON.stringify({ model: cfg.model, temperature: cfg.temperature ?? 0.7, max_tokens: cfg.maxTokens, messages, tools, tool_choice: tools ? "auto" : void 0 }),
+      signal: ctx.signal
+    });
+    if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    lastData = data;
+    const msg = data?.choices?.[0]?.message;
+    if (!msg?.tool_calls || msg.tool_calls.length === 0) {
+      return { text: msg?.content, raw: data };
+    }
+    messages.push(msg);
+    for (const tc of msg.tool_calls) {
+      let args = {};
+      try {
+        args = JSON.parse(tc.function.arguments || "{}");
+      } catch {
+      }
+      const result = await runBuiltinTool(tc.function.name, args);
+      messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
+    }
+  }
+  return { text: lastData?.choices?.[0]?.message?.content, raw: lastData };
+}
+async function runBuiltinTool(name, args) {
+  if (name === "get_time") return { now: (/* @__PURE__ */ new Date()).toISOString() };
+  if (name === "run_shell") {
+    const { exec } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const run = promisify(exec);
+    try {
+      const { stdout, stderr } = await run(args.command, { timeout: 3e4 });
+      return { stdout, stderr };
+    } catch (e) {
+      return { error: e?.message ?? String(e) };
+    }
+  }
+  if (name === "http_get") {
+    try {
+      const r = await fetch(args.url);
+      const text = await r.text();
+      return { status: r.status, body: text.slice(0, 4e3) };
+    } catch (e) {
+      return { error: e?.message ?? String(e) };
+    }
+  }
+  return { error: "unknown tool" };
 }
 
 // src/skills/registry.ts
