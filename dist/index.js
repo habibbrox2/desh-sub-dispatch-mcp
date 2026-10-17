@@ -139,6 +139,13 @@ async function runHttp() {
     app.get("/metrics", (_req, res) => {
         res.type("text/plain").send(`# HELP desh_uptime_seconds Process uptime\n# TYPE desh_uptime_seconds gauge\ndesh_uptime_seconds ${process.uptime()}\n`);
     });
+    app.get("/dashboard", (_req, res) => {
+        res.type("html").send(`<!DOCTYPE html><html><head><title>DeshSubDispatch Dashboard</title></head><body>
+<h1>DeshSubDispatch Dashboard</h1>
+<p>Uptime: <span id="up"></span>s</p>
+<script>fetch('/health').then(r=>r.json()).then(d=>{document.getElementById('up').textContent=d.uptime.toFixed(1);});</script>
+</body></html>`);
+    });
     const port = Number(process.env.PORT ?? 3000);
     app.listen(port, () => {
         console.error(`MCP HTTP server listening on http://localhost:${port}/mcp`);

@@ -49261,6 +49261,13 @@ desh_uptime_seconds ${process.uptime()}
 `
     );
   });
+  app.get("/dashboard", (_req, res) => {
+    res.type("html").send(`<!DOCTYPE html><html><head><title>DeshSubDispatch Dashboard</title></head><body>
+<h1>DeshSubDispatch Dashboard</h1>
+<p>Uptime: <span id="up"></span>s</p>
+<script>fetch('/health').then(r=>r.json()).then(d=>{document.getElementById('up').textContent=d.uptime.toFixed(1);});</script>
+</body></html>`);
+  });
   const port = Number(process.env.PORT ?? 3e3);
   app.listen(port, () => {
     console.error(`MCP HTTP server listening on http://localhost:${port}/mcp`);
