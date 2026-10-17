@@ -41,6 +41,12 @@ node dist/server.bundle.cjs --print-config
 
 ---
 
+## No API Key Required
+
+This MCP server works out of the box without any API key. Process agents and HTTP agents run without external credentials. LLM agents (OpenAI, Anthropic, etc.) only need an API key if you choose to use them.
+
+`MCP_AUTH_TOKEN` is **optional** — when set, it protects the HTTP `/mcp` endpoint with Bearer token auth. When not set (default), the endpoint is open.
+
 ## Environment Variables
 
 | Variable | Default | Description |
