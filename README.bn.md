@@ -9,6 +9,8 @@
 
 ---
 
+> 🌐 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/)
+
 ## ✨ বৈশিষ্ট্যসমূহ
 
 - 🔀 **হাইব্রিড এজেন্ট**: LLM (OpenAI/Anthropic/Generic), প্রসেস (child process), HTTP (remote endpoint)

@@ -7,7 +7,7 @@
 ![MCP](https://img.shields.io/badge/MCP-compatible-blue)
 ![Made in Bangladesh](https://img.shields.io/badge/Made%20in-Bangladesh-red)
 
-> 🇧🇩 [বাংলা README](./README.bn.md)
+> 🇧🇩 [বাংলা README](./README.bn.md) | 🌐 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/)
 
 ---
 
