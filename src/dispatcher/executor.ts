@@ -103,39 +103,59 @@ async function runHttp(agent: Agent, input: unknown, ctx: ExecContext): Promise<
 
 async function runLlm(agent: Agent, input: unknown, ctx: ExecContext): Promise<unknown> {
   const cfg = agent.config as any;
-  const apiKey = cfg.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.ANTHROPIC_API_KEY;
   const prompt = typeof input === "string" ? input : JSON.stringify(input);
   const provider = cfg.provider;
+  const apiKey = cfg.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? process.env.GEMINI_API_KEY ?? process.env.MISTRAL_API_KEY ?? process.env.COHERE_API_KEY;
+
   if (provider === "anthropic") {
     const baseUrl = cfg.baseUrl ?? "https://api.anthropic.com";
     const res = await fetch(`${baseUrl}/v1/messages`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey ?? "",
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: cfg.model,
-        max_tokens: cfg.maxTokens ?? 1024,
-        temperature: cfg.temperature ?? 0.7,
-        system: cfg.systemPrompt,
-        messages: [{ role: "user", content: prompt }],
-      }),
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey ?? "", "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: cfg.model, max_tokens: cfg.maxTokens ?? 1024, temperature: cfg.temperature ?? 0.7, system: cfg.systemPrompt, messages: [{ role: "user", content: prompt }] }),
       signal: ctx.signal,
     });
     if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
     const data: any = await res.json();
-    const text = data?.content?.[0]?.text;
-    return { text, raw: data };
+    return { text: data?.content?.[0]?.text, raw: data };
   }
-  const baseUrl = cfg.baseUrl ?? (provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434/v1");
+
+  if (provider === "gemini") {
+    const baseUrl = cfg.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta";
+    const res = await fetch(`${baseUrl}/models/${cfg.model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: cfg.systemPrompt ? { parts: [{ text: cfg.systemPrompt }] } : undefined }),
+      signal: ctx.signal,
+    });
+    if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+    const data: any = await res.json();
+    return { text: data?.candidates?.[0]?.content?.parts?.[0]?.text, raw: data };
+  }
+
+  if (provider === "cohere") {
+    const baseUrl = cfg.baseUrl ?? "https://api.cohere.ai/v1";
+    const res = await fetch(`${baseUrl}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: cfg.model, message: prompt, preamble: cfg.systemPrompt, temperature: cfg.temperature ?? 0.7 }),
+      signal: ctx.signal,
+    });
+    if (!res.ok) throw new Error(`Cohere ${res.status}: ${await res.text()}`);
+    const data: any = await res.json();
+    return { text: data?.text, raw: data };
+  }
+
+  // openai-compatible: openai, ollama, mistral, generic
+  const baseUrl = cfg.baseUrl ?? (
+    provider === "mistral" ? "https://api.mistral.ai/v1" :
+    provider === "ollama" ? "http://localhost:11434/v1" :
+    provider === "openai" ? "https://api.openai.com/v1" :
+    "http://localhost:11434/v1"
+  );
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-    },
+    headers: { "Content-Type": "application/json", ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
     body: JSON.stringify({
       model: cfg.model,
       temperature: cfg.temperature ?? 0.7,
@@ -149,6 +169,5 @@ async function runLlm(agent: Agent, input: unknown, ctx: ExecContext): Promise<u
   });
   if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`);
   const data: any = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  return { text, raw: data };
+  return { text: data?.choices?.[0]?.message?.content, raw: data };
 }

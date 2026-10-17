@@ -31,6 +31,37 @@ async function runHttp() {
   const app = express();
   app.use(express.json({ limit: "10mb" }));
 
+  // CORS
+  const corsOrigin = process.env.CORS_ORIGIN ?? "*";
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,Mcp-Session-Id,Accept");
+    if (req.method === "OPTIONS") { res.status(204).end(); return; }
+    next();
+  });
+
+  // Simple rate limiter (per IP)
+  const rateLimit = Number(process.env.RATE_LIMIT_PER_MIN ?? 0);
+  const buckets = new Map<string, { count: number; reset: number }>();
+  if (rateLimit > 0) {
+    app.use((req, res, next) => {
+      const ip = req.ip || "unknown";
+      const now = Date.now();
+      let b = buckets.get(ip);
+      if (!b || now > b.reset) { b = { count: 0, reset: now + 60000 }; buckets.set(ip, b); }
+      b.count++;
+      if (b.count > rateLimit) { res.status(429).json({ error: "Too many requests" }); return; }
+      next();
+    });
+  }
+
+  // Structured request logging
+  app.use((req, _res, next) => {
+    console.error(JSON.stringify({ ts: Date.now(), method: req.method, path: req.path, ip: req.ip }));
+    next();
+  });
+
   const authToken = process.env.MCP_AUTH_TOKEN;
   if (authToken) {
     const guard = (req: any, res: any, next: any) => {

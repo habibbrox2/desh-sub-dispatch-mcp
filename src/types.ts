@@ -2,7 +2,7 @@ export type AgentKind = "llm" | "process" | "http";
 
 export interface LlmAgentConfig {
   kind: "llm";
-  provider: "openai" | "anthropic" | "generic";
+  provider: "openai" | "anthropic" | "generic" | "gemini" | "ollama" | "mistral" | "cohere";
   apiKey?: string;
   baseUrl?: string;
   model: string;
@@ -26,6 +26,7 @@ export interface HttpAgentConfig {
   method?: "GET" | "POST" | "PUT" | "PATCH";
   headers?: Record<string, string>;
   timeoutMs?: number;
+  healthUrl?: string;
 }
 
 export type AgentConfig = LlmAgentConfig | ProcessAgentConfig | HttpAgentConfig;
@@ -57,6 +58,7 @@ export interface TaskSpec {
   timeoutMs?: number;
   retries?: number;
   retryDelayMs?: number;
+  runAt?: number;
   dependencies?: string[];
   metadata?: Record<string, unknown>;
 }

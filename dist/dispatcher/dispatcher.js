@@ -86,6 +86,8 @@ export class Dispatcher {
         for (const t of tasks) {
             if (t.status !== "pending" && t.status !== "retrying")
                 continue;
+            if (t.runAt && t.runAt > Date.now())
+                continue;
             if (t.cancelRequested) {
                 this.store.update(t.id, { status: "cancelled", finishedAt: Date.now() });
                 this.emit(this.store.get(t.id));
@@ -177,6 +179,7 @@ export class Dispatcher {
             };
             const updated = this.store.update(taskId, { status: "succeeded", finishedAt, result });
             this.emit(updated);
+            this.sendWebhook(updated);
         }
         catch (e) {
             clearTimeout(timer);
@@ -213,6 +216,7 @@ export class Dispatcher {
                 };
                 const updated = this.store.update(taskId, { status: finalStatus, finishedAt, result });
                 this.emit(updated);
+                this.sendWebhook(updated);
             }
         }
         finally {
@@ -238,6 +242,16 @@ export class Dispatcher {
             this.emit(this.store.get(c.id));
         setImmediate(() => this.tick());
         return keyToId;
+    }
+    sendWebhook(task) {
+        const url = task.metadata?.webhookUrl;
+        if (!url)
+            return;
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(task.result ?? { status: task.status }),
+        }).catch(() => { });
     }
     getStatus(taskId) {
         return this.store.get(taskId);

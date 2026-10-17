@@ -48453,39 +48453,49 @@ async function runHttp(agent, input, ctx) {
 }
 async function runLlm(agent, input, ctx) {
   const cfg = agent.config;
-  const apiKey = cfg.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.ANTHROPIC_API_KEY;
   const prompt = typeof input === "string" ? input : JSON.stringify(input);
   const provider = cfg.provider;
+  const apiKey = cfg.apiKey ?? process.env.OPENAI_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? process.env.GEMINI_API_KEY ?? process.env.MISTRAL_API_KEY ?? process.env.COHERE_API_KEY;
   if (provider === "anthropic") {
     const baseUrl2 = cfg.baseUrl ?? "https://api.anthropic.com";
     const res2 = await fetch(`${baseUrl2}/v1/messages`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey ?? "",
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: cfg.model,
-        max_tokens: cfg.maxTokens ?? 1024,
-        temperature: cfg.temperature ?? 0.7,
-        system: cfg.systemPrompt,
-        messages: [{ role: "user", content: prompt }]
-      }),
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey ?? "", "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: cfg.model, max_tokens: cfg.maxTokens ?? 1024, temperature: cfg.temperature ?? 0.7, system: cfg.systemPrompt, messages: [{ role: "user", content: prompt }] }),
       signal: ctx.signal
     });
     if (!res2.ok) throw new Error(`Anthropic ${res2.status}: ${await res2.text()}`);
     const data2 = await res2.json();
-    const text2 = data2?.content?.[0]?.text;
-    return { text: text2, raw: data2 };
+    return { text: data2?.content?.[0]?.text, raw: data2 };
   }
-  const baseUrl = cfg.baseUrl ?? (provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434/v1");
+  if (provider === "gemini") {
+    const baseUrl2 = cfg.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta";
+    const res2 = await fetch(`${baseUrl2}/models/${cfg.model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: cfg.systemPrompt ? { parts: [{ text: cfg.systemPrompt }] } : void 0 }),
+      signal: ctx.signal
+    });
+    if (!res2.ok) throw new Error(`Gemini ${res2.status}: ${await res2.text()}`);
+    const data2 = await res2.json();
+    return { text: data2?.candidates?.[0]?.content?.parts?.[0]?.text, raw: data2 };
+  }
+  if (provider === "cohere") {
+    const baseUrl2 = cfg.baseUrl ?? "https://api.cohere.ai/v1";
+    const res2 = await fetch(`${baseUrl2}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: cfg.model, message: prompt, preamble: cfg.systemPrompt, temperature: cfg.temperature ?? 0.7 }),
+      signal: ctx.signal
+    });
+    if (!res2.ok) throw new Error(`Cohere ${res2.status}: ${await res2.text()}`);
+    const data2 = await res2.json();
+    return { text: data2?.text, raw: data2 };
+  }
+  const baseUrl = cfg.baseUrl ?? (provider === "mistral" ? "https://api.mistral.ai/v1" : provider === "ollama" ? "http://localhost:11434/v1" : provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434/v1");
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...apiKey ? { Authorization: `Bearer ${apiKey}` } : {}
-    },
+    headers: { "Content-Type": "application/json", ...apiKey ? { Authorization: `Bearer ${apiKey}` } : {} },
     body: JSON.stringify({
       model: cfg.model,
       temperature: cfg.temperature ?? 0.7,
@@ -48499,8 +48509,7 @@ async function runLlm(agent, input, ctx) {
   });
   if (!res.ok) throw new Error(`LLM ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  return { text, raw: data };
+  return { text: data?.choices?.[0]?.message?.content, raw: data };
 }
 
 // src/skills/registry.ts
@@ -48719,6 +48728,7 @@ var Dispatcher = class {
     const tasks = this.store.list();
     for (const t of tasks) {
       if (t.status !== "pending" && t.status !== "retrying") continue;
+      if (t.runAt && t.runAt > Date.now()) continue;
       if (t.cancelRequested) {
         this.store.update(t.id, { status: "cancelled", finishedAt: Date.now() });
         this.emit(this.store.get(t.id));
@@ -48805,6 +48815,7 @@ var Dispatcher = class {
       };
       const updated = this.store.update(taskId, { status: "succeeded", finishedAt, result });
       this.emit(updated);
+      this.sendWebhook(updated);
     } catch (e) {
       clearTimeout(timer);
       const errMsg = e?.message ?? String(e);
@@ -48838,6 +48849,7 @@ var Dispatcher = class {
         };
         const updated = this.store.update(taskId, { status: finalStatus, finishedAt, result });
         this.emit(updated);
+        this.sendWebhook(updated);
       }
     } finally {
       this.controllers.delete(taskId);
@@ -48861,6 +48873,16 @@ var Dispatcher = class {
     for (const c of created) this.emit(this.store.get(c.id));
     setImmediate(() => this.tick());
     return keyToId;
+  }
+  sendWebhook(task) {
+    const url = task.metadata?.webhookUrl;
+    if (!url) return;
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(task.result ?? { status: task.status })
+    }).catch(() => {
+    });
   }
   getStatus(taskId) {
     return this.store.get(taskId);
@@ -49083,6 +49105,40 @@ async function runStdio() {
 async function runHttp2() {
   const app = (0, import_express.default)();
   app.use(import_express.default.json({ limit: "10mb" }));
+  const corsOrigin = process.env.CORS_ORIGIN ?? "*";
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,Mcp-Session-Id,Accept");
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+  const rateLimit = Number(process.env.RATE_LIMIT_PER_MIN ?? 0);
+  const buckets = /* @__PURE__ */ new Map();
+  if (rateLimit > 0) {
+    app.use((req, res, next) => {
+      const ip = req.ip || "unknown";
+      const now = Date.now();
+      let b = buckets.get(ip);
+      if (!b || now > b.reset) {
+        b = { count: 0, reset: now + 6e4 };
+        buckets.set(ip, b);
+      }
+      b.count++;
+      if (b.count > rateLimit) {
+        res.status(429).json({ error: "Too many requests" });
+        return;
+      }
+      next();
+    });
+  }
+  app.use((req, _res, next) => {
+    console.error(JSON.stringify({ ts: Date.now(), method: req.method, path: req.path, ip: req.ip }));
+    next();
+  });
   const authToken = process.env.MCP_AUTH_TOKEN;
   if (authToken) {
     const guard = (req, res, next) => {
