@@ -1,0 +1,42 @@
+<evaluation>
+   <qa_pair>
+      <question>A teammate wants an agent that can summarize text using a hosted model, but only if the preset's configuration targets a large language model platform rather than a local process or a remote web endpoint. Call the skill-listing tool, then inspect each candidate's agent configuration, and count how many of the built-in presets are language-model based. Answer with the count only.</question>
+      <answer>4</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>Exactly one built-in skill preset is tagged for both coding assistance and Claude-family models. What is that preset's id? Answer with the id only.</question>
+      <answer>claude-coder</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>Look at every built-in preset that configures a hosted language model and read the provider field of each. Which distinct providers appear? Answer as a comma-separated list of provider names sorted alphabetically, lowercase, nothing else.</question>
+      <answer>anthropic, openai</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>The server's listing tools are paginated and their input schemas publish the accepted range of the page-size parameter on the agent and task listing tools. What is the largest page size a client may request? Answer with the number only.</question>
+      <answer>500</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>This server ships prompt templates that teach clients how to drive it. Query the prompt listing and report how many prompts exist together with their names in alphabetical order, formatted exactly as: COUNT: name1, name2, name3.</question>
+      <answer>3: dag-workflow, dispatch-task, monitor-fleet</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>Every tool carries safety annotations. Find the one tool that is annotated as destructive but NOT open-world (i.e., it permanently removes data this server stores yet makes no external calls). Answer with the tool name only.</question>
+      <answer>unregister_agent</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>An integrator likes a shipped preset and wants a running agent without writing its configuration by hand. Which tool converts a preset into a registered agent? Answer with the tool name only.</question>
+      <answer>register_agent_from_skill</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>Using the dispatcher statistics tool on a server started with default settings, how many tasks can be executing at the same time across all registered agents combined (the field describing total execution slots, not the per-agent one)? Answer with the number only.</question>
+      <answer>4</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>A client asks the result-retrieval tool to block until a task finishes but supplies no explicit timeout. According to that tool's documented default, for how many milliseconds will the call wait at most? Answer with the number only.</question>
+      <answer>30000</answer>
+   </qa_pair>
+   <qa_pair>
+      <question>The server exposes its presets as a readable resource in addition to tools. Read the skill index resource and find the preset meant for calling a remote web service at a caller-chosen URL; report that preset's exact one-line description.</question>
+      <answer>HTTP agent template; configure url per use.</answer>
+   </qa_pair>
+</evaluation>
