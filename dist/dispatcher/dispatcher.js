@@ -3,6 +3,7 @@ import { TaskStore } from "./taskStore.js";
 import { executeAgent } from "./executor.js";
 import { SkillRegistry } from "../skills/registry.js";
 import { openDatabase } from "../persistence/database.js";
+import { checkWebhookUrl } from "../security.js";
 export class Dispatcher {
     registry;
     store;
@@ -91,52 +92,60 @@ export class Dispatcher {
         return updated;
     }
     tick() {
-        const tasks = this.store.list();
-        for (const t of tasks) {
-            if (t.status !== "pending" && t.status !== "retrying")
-                continue;
-            if (t.runAt && t.runAt > Date.now())
-                continue;
-            if (t.cancelRequested) {
-                this.store.update(t.id, { status: "cancelled", finishedAt: Date.now() });
-                this.emit(this.store.get(t.id));
-                continue;
-            }
-            let depFailed = false;
-            let depsReady = true;
-            for (const depId of t.dependencies ?? []) {
-                const dep = this.store.get(depId);
-                if (!dep) {
-                    depFailed = true;
-                    break;
+        // Re-scan until a pass flips nothing: dependency failures must cascade down
+        // the whole chain (each pass propagates one level), same for cancel flags.
+        let progressed = true;
+        while (progressed) {
+            progressed = false;
+            const tasks = this.store.list();
+            for (const t of tasks) {
+                if (t.status !== "pending" && t.status !== "retrying")
+                    continue;
+                if (t.runAt && t.runAt > Date.now())
+                    continue;
+                if (t.cancelRequested) {
+                    this.store.update(t.id, { status: "cancelled", finishedAt: Date.now() });
+                    this.emit(this.store.get(t.id));
+                    progressed = true;
+                    continue;
                 }
-                if (dep.status === "failed" || dep.status === "cancelled") {
-                    depFailed = true;
-                    break;
+                let depFailed = false;
+                let depsReady = true;
+                for (const depId of t.dependencies ?? []) {
+                    const dep = this.store.get(depId);
+                    if (!dep) {
+                        depFailed = true;
+                        break;
+                    }
+                    if (dep.status === "failed" || dep.status === "cancelled") {
+                        depFailed = true;
+                        break;
+                    }
+                    if (dep.status !== "succeeded") {
+                        depsReady = false;
+                        break;
+                    }
                 }
-                if (dep.status !== "succeeded") {
-                    depsReady = false;
-                    break;
+                if (depFailed) {
+                    const r = {
+                        taskId: t.id,
+                        agentId: t.agentId,
+                        status: "failed",
+                        error: "Dependency failed",
+                        attempts: t.attempts,
+                        finishedAt: Date.now(),
+                    };
+                    const updated = this.store.update(t.id, { status: "failed", finishedAt: Date.now(), result: r });
+                    this.emit(updated);
+                    progressed = true;
+                    continue;
                 }
-            }
-            if (depFailed) {
-                const r = {
-                    taskId: t.id,
-                    agentId: t.agentId,
-                    status: "failed",
-                    error: "Dependency failed",
-                    attempts: t.attempts,
-                    finishedAt: Date.now(),
-                };
-                const updated = this.store.update(t.id, { status: "failed", finishedAt: Date.now(), result: r });
-                this.emit(updated);
-                continue;
-            }
-            if (!depsReady)
-                continue;
-            if (t.status === "pending") {
-                const u = this.store.update(t.id, { status: "queued" });
-                this.emit(u);
+                if (!depsReady)
+                    continue;
+                if (t.status === "pending") {
+                    const u = this.store.update(t.id, { status: "queued" });
+                    this.emit(u);
+                }
             }
         }
         const queued = this.store.list({ status: "queued" })
@@ -256,11 +265,24 @@ export class Dispatcher {
         const url = task.metadata?.webhookUrl;
         if (!url)
             return;
-        fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(task.result ?? { status: task.status }),
-        }).catch(() => { });
+        void (async () => {
+            const check = await checkWebhookUrl(String(url));
+            if (!check.ok) {
+                console.error(JSON.stringify({ ts: Date.now(), event: "webhook_blocked", taskId: task.id, reason: check.reason }));
+                return;
+            }
+            try {
+                await fetch(String(url), {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(task.result ?? { status: task.status }),
+                    redirect: "error",
+                });
+            }
+            catch {
+                // delivery is best-effort
+            }
+        })();
     }
     getStatus(taskId) {
         return this.store.get(taskId);

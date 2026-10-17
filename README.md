@@ -24,14 +24,18 @@
 
 ## 🔌 Configuration
 
-### Public MCP Endpoint (No Auth — Free for Everyone)
+### Hosted MCP Endpoint (Bearer auth required)
+
+The hosted endpoint is authenticated by default. Set `MCP_AUTH_TOKEN` on the
+server and pass it as a header where your client supports it:
 
 ```json
 {
   "mcpServers": {
     "DeshSubDispatch": {
       "type": "http",
-      "url": "https://deshdsp.fly.dev/mcp"
+      "url": "https://deshdsp.fly.dev/mcp",
+      "headers": { "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN" }
     }
   }
 }
@@ -235,9 +239,9 @@ node dist/server.bundle.cjs --print-config
 
 ## 🔑 No API Key Required
 
-This MCP server works out of the box without any API key. Process agents and HTTP agents run without external credentials. LLM agents (OpenAI, Anthropic, etc.) only need an API key if you choose to use them.
+No API key is needed to run the server. Process and HTTP agents run without external credentials; LLM agents (OpenAI, Anthropic, etc.) only need an API key if you choose to use them.
 
-`MCP_AUTH_TOKEN` is **optional** — when set, it protects the HTTP `/mcp` endpoint with Bearer token auth. When not set (default), the endpoint is open.
+HTTP mode is **authenticated by default**: `/mcp`, `/sse` and `/messages` require `Authorization: Bearer <token>`. If `MCP_AUTH_TOKEN` is unset, a random per-process token is generated and logged to stderr at startup. Set `MCP_AUTH_TOKEN` for a stable token, or `MCP_ALLOW_ANONYMOUS=1` to explicitly serve the MCP endpoints without auth (not recommended on the public internet). Local `stdio` mode needs no token.
 
 ## Environment Variables
 
@@ -245,7 +249,8 @@ This MCP server works out of the box without any API key. Process agents and HTT
 |----------|---------|-------------|
 | `TRANSPORT` | `stdio` | `stdio` or `http` |
 | `PORT` | `3000` | HTTP port |
-| `MCP_AUTH_TOKEN` | (none) | Bearer token required for `/mcp`, `/sse`, `/messages` when set |
+| `MCP_AUTH_TOKEN` | (auto-generated) | Bearer token for `/mcp`, `/sse`, `/messages`; when unset a random per-process token is generated and logged at startup |
+| `MCP_ALLOW_ANONYMOUS` | `0` | `1` serves the MCP endpoints without Bearer auth (ignored when `MCP_AUTH_TOKEN` is set) |
 | `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
 | `CORS_ORIGIN` | `*` | CORS allowed origin |
 | `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |

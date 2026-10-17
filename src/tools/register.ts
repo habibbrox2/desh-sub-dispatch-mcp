@@ -148,7 +148,7 @@ export function registerTools(server: McpServer, dispatcher: Dispatcher) {
       retries: z.number().int().nonnegative().optional().describe("Extra attempts after a failure (default 0)"),
       retryDelayMs: z.number().optional().describe("Delay between retries in milliseconds (default 1000)"),
       dependencies: z.array(z.string()).optional().describe("Task ids that must succeed before this runs"),
-      metadata: z.record(z.any()).optional().describe("Free-form metadata; webhookUrl triggers a POST on completion"),
+      metadata: z.record(z.any()).optional().describe("Free-form metadata; webhookUrl triggers a POST on completion (http/https, public hosts only)"),
       id: z.string().optional().describe("Optional custom task id; omit to auto-generate a UUID"),
     },
     outputSchema: { taskId: z.string().describe("Id to use with get_task_status/get_task_result"), status: z.string().describe("Initial status: pending or queued") },

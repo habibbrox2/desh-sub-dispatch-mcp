@@ -24,14 +24,18 @@
 
 ## 🔌 কনফিগারেশন
 
-### Public MCP Endpoint (No Auth — সবার জন্য ফ্রি)
+### Hosted MCP Endpoint (Bearer auth প্রয়োজন)
+
+হোস্ট করা endpoint-এ ডিফল্টে authentication আছে। সার্ভারে `MCP_AUTH_TOKEN` সেট করুন
+এবং ক্লায়েন্ট সাপোর্ট করলে header হিসেবে পাঠান:
 
 ```json
 {
   "mcpServers": {
     "DeshSubDispatch": {
       "type": "http",
-      "url": "https://deshdsp.fly.dev/mcp"
+      "url": "https://deshdsp.fly.dev/mcp",
+      "headers": { "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN" }
     }
   }
 }
@@ -235,9 +239,9 @@ node dist/server.bundle.cjs --print-config
 
 ## 🔑 কোনো API Key লাগবে না
 
-এই MCP server কোনো API key ছাড়াই কাজ করে। Process agents এবং HTTP agents কোনো external credentials ছাড়াই চলে। LLM agents (OpenAI, Anthropic, etc.) শুধুমাত্র সেগুলো ব্যবহার করলে API key লাগবে।
+সার্ভার চালাতে কোনো API key লাগে না। Process agents এবং HTTP agents কোনো external credentials ছাড়াই চলে; LLM agents (OpenAI, Anthropic, etc.) শুধু ব্যবহার করলেই API key লাগে।
 
-`MCP_AUTH_TOKEN` হলো **optional** — সেট করলে HTTP `/mcp` endpoint কে Bearer token auth দিয়ে সুরক্ষিত করে। সেট না করলে (default) endpoint উন্মুক্ত থাকে।
+HTTP mode এখন **ডিফল্টে authenticated**: `/mcp`, `/sse` এবং `/messages`-এ `Authorization: Bearer <token>` লাগে। `MCP_AUTH_TOKEN` সেট না থাকলে শুরুতে একটি random per-process টোকেন generate করে stderr-এ লগ করা হয়। স্থিতিশীল টোকেনের জন্য `MCP_AUTH_TOKEN` সেট করুন, অথবা `MCP_ALLOW_ANONYMOUS=1` দিয়ে টোকেন ছাড়াই এন্ডপয়েন্ট খোলা রাখুন (পাবলিক ইন্টারনেটে এটি সুপারিশযোগ্য নয়)। লোকাল `stdio` মোডে কোনো টোকেন লাগে না।
 
 ## Environment Variables
 
@@ -245,7 +249,8 @@ node dist/server.bundle.cjs --print-config
 |----------|---------|-------------|
 | `TRANSPORT` | `stdio` | `stdio` or `http` |
 | `PORT` | `3000` | HTTP port |
-| `MCP_AUTH_TOKEN` | (none) | Bearer token required for `/mcp`, `/sse`, `/messages` when set |
+| `MCP_AUTH_TOKEN` | (auto-generated) | `/mcp`, `/sse`, `/messages`-এর Bearer টোকেন; সেট না থাকলে শুরুতে random per-process টোকেন generate করে লগ হয় |
+| `MCP_ALLOW_ANONYMOUS` | `0` | `1` দিলে MCP endpoints Bearer auth ছাড়াই চলবে (`MCP_AUTH_TOKEN` সেট থাকলে উপেক্ষা করা হয়) |
 | `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
 | `CORS_ORIGIN` | `*` | CORS allowed origin |
 | `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |

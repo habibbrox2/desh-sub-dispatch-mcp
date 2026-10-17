@@ -3341,8 +3341,8 @@ var require_utils = __commonJS({
     var HOST_DELIMS = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" };
     var HOST_DELIM_RE = /[@/?#:]/g;
     var HOST_DELIM_NO_COLON_RE = /[@/?#]/g;
-    function reescapeHostDelimiters(host, isIP) {
-      const re = isIP ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
+    function reescapeHostDelimiters(host, isIP2) {
+      const re = isIP2 ? HOST_DELIM_NO_COLON_RE : HOST_DELIM_RE;
       re.lastIndex = 0;
       return host.replace(re, (ch) => HOST_DELIMS[ch]);
     }
@@ -4031,8 +4031,8 @@ var require_fast_uri = __commonJS({
       const host = matches[4];
       return hasMalformedPercentEncoding(matches[3]) || host !== void 0 && !isIPLiteral(host) && hasMalformedPercentEncoding(host) || hasMalformedPercentEncoding(matches[6]) || hasMalformedPercentEncoding(matches[7]) || hasMalformedPercentEncoding(matches[8]);
     }
-    function canonicalizeHost(parsed, options, schemeHandler, isIP) {
-      if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP === false && nonSimpleDomain(parsed.host)) {
+    function canonicalizeHost(parsed, options, schemeHandler, isIP2) {
+      if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport) && parsed.host && !isIPLiteral(parsed.host) && (options.domainHost || schemeHandler && schemeHandler.domainHost) && isIP2 === false && nonSimpleDomain(parsed.host)) {
         try {
           parsed.host = new URL("http://" + parsed.host).hostname;
         } catch (e) {
@@ -4059,7 +4059,7 @@ var require_fast_uri = __commonJS({
       let malformedHost = false;
       let malformedIPLiteral = false;
       let malformedScheme = false;
-      let isIP = false;
+      let isIP2 = false;
       if (options.reference === "suffix") {
         if (options.scheme) {
           uri = options.scheme + ":" + uri;
@@ -4122,15 +4122,15 @@ var require_fast_uri = __commonJS({
             const bracketedIPLiteral = isIPLiteral(parsed.host);
             const hasIPLiteralBracket = parsed.host.indexOf("[") !== -1 || parsed.host.indexOf("]") !== -1;
             const ipv6result = normalizeIPv6(parsed.host);
-            isIP = ipv6result.isIPV6 || ipv6result.isIPVFuture === true;
+            isIP2 = ipv6result.isIPV6 || ipv6result.isIPVFuture === true;
             malformedIPLiteral = hasIPLiteralBracket && (!bracketedIPLiteral || ipv6result.error === true);
-            parsed.host = isIP ? ipv6result.host : ipv6result.host.toLowerCase();
+            parsed.host = isIP2 ? ipv6result.host : ipv6result.host.toLowerCase();
             if (malformedIPLiteral) {
               parsed.error = parsed.error || "URI host is malformed.";
               malformedAuthorityOrPort = true;
             }
           } else {
-            isIP = true;
+            isIP2 = true;
           }
         }
         if (parsed.scheme === void 0 && parsed.userinfo === void 0 && parsed.host === void 0 && parsed.port === void 0 && parsed.query === void 0 && !parsed.path) {
@@ -4147,14 +4147,14 @@ var require_fast_uri = __commonJS({
         }
         const schemeHandler = getSchemeHandler(options.scheme || parsed.scheme);
         if (!malformedIPLiteral) {
-          malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP);
+          malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP2);
         }
         if (uri.indexOf("%") !== -1 && parsed.host !== void 0 && !malformedIPLiteral) {
-          let host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true);
-          if (!isIP) {
+          let host = isIP2 ? parsed.host : normalizePercentEncoding(parsed.host, true);
+          if (!isIP2) {
             host = normalizePercentEncoding(host.toLowerCase());
           }
-          parsed.host = reescapeHostDelimiters(host, isIP);
+          parsed.host = reescapeHostDelimiters(host, isIP2);
         }
         if (!schemeHandler || schemeHandler && !schemeHandler.skipNormalize) {
           if (parsed.path) {
@@ -29815,7 +29815,7 @@ var require_request = __commonJS({
   "node_modules/express/lib/request.js"(exports2, module2) {
     "use strict";
     var accepts = require_accepts();
-    var isIP = require("node:net").isIP;
+    var isIP2 = require("node:net").isIP;
     var typeis = require_type_is();
     var http = require("node:http");
     var fresh = require_fresh();
@@ -29905,7 +29905,7 @@ var require_request = __commonJS({
       var hostname2 = this.hostname;
       if (!hostname2) return [];
       var offset = this.app.get("subdomain offset");
-      var subdomains2 = !isIP(hostname2) ? hostname2.split(".").reverse() : [hostname2];
+      var subdomains2 = !isIP2(hostname2) ? hostname2.split(".").reverse() : [hostname2];
       return subdomains2.slice(offset);
     });
     defineGetter(req, "path", function path() {
@@ -46218,11 +46218,7 @@ async function runLlm(agent, input, ctx) {
     return { text: data?.text, raw: data };
   }
   const baseUrl = cfg.baseUrl ?? (provider === "mistral" ? "https://api.mistral.ai/v1" : provider === "ollama" ? "http://localhost:11434/v1" : provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434/v1");
-  const tools = cfg.enableTools ? [
-    { type: "function", function: { name: "get_time", description: "Get current ISO time", parameters: { type: "object", properties: {} } } },
-    { type: "function", function: { name: "run_shell", description: "Run a shell command and return output", parameters: { type: "object", properties: { command: { type: "string" } }, required: ["command"] } } },
-    { type: "function", function: { name: "http_get", description: "HTTP GET a URL", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } }
-  ] : void 0;
+  const tools = cfg.enableTools ? BUILTIN_LLM_TOOLS : void 0;
   const userContent = images.length ? [{ type: "text", text: prompt }, ...images.map((u) => ({ type: "image_url", image_url: { url: u } }))] : prompt;
   const messages = [
     ...cfg.systemPrompt ? [{ role: "system", content: cfg.systemPrompt }] : [],
@@ -46256,18 +46252,14 @@ async function runLlm(agent, input, ctx) {
   }
   return { text: lastData?.choices?.[0]?.message?.content, raw: lastData };
 }
+var BUILTIN_LLM_TOOLS = [
+  { type: "function", function: { name: "get_time", description: "Get current ISO time", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "http_get", description: "HTTP GET a URL", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } }
+];
 async function runBuiltinTool(name, args) {
   if (name === "get_time") return { now: (/* @__PURE__ */ new Date()).toISOString() };
   if (name === "run_shell") {
-    const { exec } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const run = promisify(exec);
-    try {
-      const { stdout, stderr } = await run(args.command, { timeout: 3e4 });
-      return { stdout, stderr };
-    } catch (e) {
-      return { error: e?.message ?? String(e) };
-    }
+    return { error: "run_shell was removed for security reasons; run commands through a registered process agent instead" };
   }
   if (name === "http_get") {
     try {
@@ -46418,6 +46410,69 @@ function openDatabase(path) {
   return db;
 }
 
+// src/security.ts
+var import_node_net = require("node:net");
+var import_node_dns = require("node:dns");
+var dnsLookup = async (hostname2) => import_node_dns.promises.lookup(hostname2, { all: true });
+function isPublicAddress(ip) {
+  const v = (0, import_node_net.isIP)(ip);
+  if (v === 4) {
+    const [a, b] = ip.split(".").map(Number);
+    if (a === 0 || a === 10 || a === 127) return false;
+    if (a === 100 && b >= 64 && b <= 127) return false;
+    if (a === 169 && b === 254) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 0) return false;
+    if (a === 192 && b === 168) return false;
+    if (a === 198 && (b === 18 || b === 19)) return false;
+    if (a >= 224) return false;
+    return true;
+  }
+  if (v === 6) {
+    const h = ip.toLowerCase();
+    if (h === "::" || h === "::1") return false;
+    if (h.startsWith("::ffff:")) return isPublicAddress(h.slice(7));
+    if (h.startsWith("fc") || h.startsWith("fd")) return false;
+    if (/^fe[89ab]/.test(h)) return false;
+    if (h.startsWith("ff")) return false;
+    return true;
+  }
+  return false;
+}
+var deny = (reason) => ({ ok: false, reason });
+async function checkWebhookUrl(rawUrl, lookup = dnsLookup) {
+  let u;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    return deny("not a valid URL");
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    return deny(`only http/https webhook URLs are allowed, got "${u.protocol}"`);
+  }
+  if (u.username || u.password) return deny("credentials in the webhook URL are not allowed");
+  const host = u.hostname.replace(/^\[/, "").replace(/\]$/, "").toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || host.endsWith(".home.arpa") || host === "metadata.google.internal" || host === "") {
+    return deny(`hostname "${host}" is not a public address`);
+  }
+  if ((0, import_node_net.isIP)(host)) {
+    return isPublicAddress(host) ? { ok: true } : deny(`address ${host} is not a public address`);
+  }
+  let addrs;
+  try {
+    addrs = await lookup(host);
+  } catch {
+    return deny(`could not resolve hostname "${host}"`);
+  }
+  if (!addrs.length) return deny(`could not resolve hostname "${host}"`);
+  for (const a of addrs) {
+    if (!isPublicAddress(a.address)) {
+      return deny(`hostname "${host}" resolves to non-public address ${a.address}`);
+    }
+  }
+  return { ok: true };
+}
+
 // src/dispatcher/dispatcher.ts
 var Dispatcher = class {
   registry;
@@ -46503,49 +46558,55 @@ var Dispatcher = class {
     return updated;
   }
   tick() {
-    const tasks = this.store.list();
-    for (const t of tasks) {
-      if (t.status !== "pending" && t.status !== "retrying") continue;
-      if (t.runAt && t.runAt > Date.now()) continue;
-      if (t.cancelRequested) {
-        this.store.update(t.id, { status: "cancelled", finishedAt: Date.now() });
-        this.emit(this.store.get(t.id));
-        continue;
-      }
-      let depFailed = false;
-      let depsReady = true;
-      for (const depId of t.dependencies ?? []) {
-        const dep = this.store.get(depId);
-        if (!dep) {
-          depFailed = true;
-          break;
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      const tasks = this.store.list();
+      for (const t of tasks) {
+        if (t.status !== "pending" && t.status !== "retrying") continue;
+        if (t.runAt && t.runAt > Date.now()) continue;
+        if (t.cancelRequested) {
+          this.store.update(t.id, { status: "cancelled", finishedAt: Date.now() });
+          this.emit(this.store.get(t.id));
+          progressed = true;
+          continue;
         }
-        if (dep.status === "failed" || dep.status === "cancelled") {
-          depFailed = true;
-          break;
+        let depFailed = false;
+        let depsReady = true;
+        for (const depId of t.dependencies ?? []) {
+          const dep = this.store.get(depId);
+          if (!dep) {
+            depFailed = true;
+            break;
+          }
+          if (dep.status === "failed" || dep.status === "cancelled") {
+            depFailed = true;
+            break;
+          }
+          if (dep.status !== "succeeded") {
+            depsReady = false;
+            break;
+          }
         }
-        if (dep.status !== "succeeded") {
-          depsReady = false;
-          break;
+        if (depFailed) {
+          const r = {
+            taskId: t.id,
+            agentId: t.agentId,
+            status: "failed",
+            error: "Dependency failed",
+            attempts: t.attempts,
+            finishedAt: Date.now()
+          };
+          const updated = this.store.update(t.id, { status: "failed", finishedAt: Date.now(), result: r });
+          this.emit(updated);
+          progressed = true;
+          continue;
         }
-      }
-      if (depFailed) {
-        const r = {
-          taskId: t.id,
-          agentId: t.agentId,
-          status: "failed",
-          error: "Dependency failed",
-          attempts: t.attempts,
-          finishedAt: Date.now()
-        };
-        const updated = this.store.update(t.id, { status: "failed", finishedAt: Date.now(), result: r });
-        this.emit(updated);
-        continue;
-      }
-      if (!depsReady) continue;
-      if (t.status === "pending") {
-        const u = this.store.update(t.id, { status: "queued" });
-        this.emit(u);
+        if (!depsReady) continue;
+        if (t.status === "pending") {
+          const u = this.store.update(t.id, { status: "queued" });
+          this.emit(u);
+        }
       }
     }
     const queued = this.store.list({ status: "queued" }).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.createdAt - b.createdAt);
@@ -46655,12 +46716,22 @@ var Dispatcher = class {
   sendWebhook(task) {
     const url = task.metadata?.webhookUrl;
     if (!url) return;
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(task.result ?? { status: task.status })
-    }).catch(() => {
-    });
+    void (async () => {
+      const check2 = await checkWebhookUrl(String(url));
+      if (!check2.ok) {
+        console.error(JSON.stringify({ ts: Date.now(), event: "webhook_blocked", taskId: task.id, reason: check2.reason }));
+        return;
+      }
+      try {
+        await fetch(String(url), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(task.result ?? { status: task.status }),
+          redirect: "error"
+        });
+      } catch {
+      }
+    })();
   }
   getStatus(taskId) {
     return this.store.get(taskId);
@@ -46798,7 +46869,7 @@ function registerTools(server, dispatcher) {
       retries: external_exports.number().int().nonnegative().optional().describe("Extra attempts after a failure (default 0)"),
       retryDelayMs: external_exports.number().optional().describe("Delay between retries in milliseconds (default 1000)"),
       dependencies: external_exports.array(external_exports.string()).optional().describe("Task ids that must succeed before this runs"),
-      metadata: external_exports.record(external_exports.any()).optional().describe("Free-form metadata; webhookUrl triggers a POST on completion"),
+      metadata: external_exports.record(external_exports.any()).optional().describe("Free-form metadata; webhookUrl triggers a POST on completion (http/https, public hosts only)"),
       id: external_exports.string().optional().describe("Optional custom task id; omit to auto-generate a UUID")
     },
     outputSchema: { taskId: external_exports.string().describe("Id to use with get_task_status/get_task_result"), status: external_exports.string().describe("Initial status: pending or queued") },
@@ -49396,11 +49467,25 @@ function createHttpApp(opts) {
     console.error(JSON.stringify({ ts: Date.now(), method: req.method, path: req.path, ip: req.ip }));
     next();
   });
-  const authToken = process.env.MCP_AUTH_TOKEN;
+  const authToken = process.env.MCP_AUTH_TOKEN ?? (process.env.MCP_ALLOW_ANONYMOUS === "1" ? void 0 : (0, import_node_crypto4.randomBytes)(24).toString("base64url"));
+  app.locals.authToken = authToken;
+  if (authToken && !process.env.MCP_AUTH_TOKEN) {
+    console.error(JSON.stringify({
+      ts: Date.now(),
+      event: "ephemeral_auth_token",
+      token: authToken,
+      hint: "MCP_AUTH_TOKEN is unset, so this process generated a random one. Set MCP_AUTH_TOKEN for a stable token or MCP_ALLOW_ANONYMOUS=1 to disable Bearer auth."
+    }));
+  }
+  const bearerMatches = (header, token) => {
+    if (typeof header !== "string" || !header.startsWith("Bearer ")) return false;
+    const a = (0, import_node_crypto4.createHash)("sha256").update(header.slice(7)).digest();
+    const b = (0, import_node_crypto4.createHash)("sha256").update(token).digest();
+    return (0, import_node_crypto4.timingSafeEqual)(a, b);
+  };
   if (authToken) {
     const guard = (req, res, next) => {
-      const h = req.headers["authorization"] || "";
-      if (h === `Bearer ${authToken}`) return next();
+      if (bearerMatches(req.headers["authorization"], authToken)) return next();
       res.status(401).json({ error: "Unauthorized" });
     };
     app.use("/mcp", guard);

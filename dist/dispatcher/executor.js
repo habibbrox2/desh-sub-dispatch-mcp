@@ -142,11 +142,7 @@ async function runLlm(agent, input, ctx) {
         provider === "ollama" ? "http://localhost:11434/v1" :
             provider === "openai" ? "https://api.openai.com/v1" :
                 "http://localhost:11434/v1");
-    const tools = cfg.enableTools ? [
-        { type: "function", function: { name: "get_time", description: "Get current ISO time", parameters: { type: "object", properties: {} } } },
-        { type: "function", function: { name: "run_shell", description: "Run a shell command and return output", parameters: { type: "object", properties: { command: { type: "string" } }, required: ["command"] } } },
-        { type: "function", function: { name: "http_get", description: "HTTP GET a URL", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
-    ] : undefined;
+    const tools = cfg.enableTools ? BUILTIN_LLM_TOOLS : undefined;
     const userContent = images.length ? [{ type: "text", text: prompt }, ...images.map((u) => ({ type: "image_url", image_url: { url: u } }))] : prompt;
     const messages = [
         ...(cfg.systemPrompt ? [{ role: "system", content: cfg.systemPrompt }] : []),
@@ -181,20 +177,16 @@ async function runLlm(agent, input, ctx) {
     }
     return { text: lastData?.choices?.[0]?.message?.content, raw: lastData };
 }
-async function runBuiltinTool(name, args) {
+/** Built-in tools exposed to LLM tool-calling loops (run_shell retired: remote command execution). */
+export const BUILTIN_LLM_TOOLS = [
+    { type: "function", function: { name: "get_time", description: "Get current ISO time", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "http_get", description: "HTTP GET a URL", parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } } },
+];
+export async function runBuiltinTool(name, args) {
     if (name === "get_time")
         return { now: new Date().toISOString() };
     if (name === "run_shell") {
-        const { exec } = await import("node:child_process");
-        const { promisify } = await import("node:util");
-        const run = promisify(exec);
-        try {
-            const { stdout, stderr } = await run(args.command, { timeout: 30000 });
-            return { stdout, stderr };
-        }
-        catch (e) {
-            return { error: e?.message ?? String(e) };
-        }
+        return { error: "run_shell was removed for security reasons; run commands through a registered process agent instead" };
     }
     if (name === "http_get") {
         try {
