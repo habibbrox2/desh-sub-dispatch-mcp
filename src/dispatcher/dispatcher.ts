@@ -2,6 +2,7 @@ import { AgentRegistry } from "../agents/registry.js";
 import { TaskStore } from "./taskStore.js";
 import { executeAgent } from "./executor.js";
 import { SkillRegistry } from "../skills/registry.js";
+import { openDatabase } from "../persistence/database.js";
 import type { Task, TaskSpec, TaskStatus, TaskResult } from "../types.js";
 
 export interface DispatcherOptions {
@@ -13,6 +14,7 @@ export class Dispatcher {
   registry: AgentRegistry;
   store: TaskStore;
   skills: SkillRegistry;
+  db: any;
   private maxConcurrency: number;
   private active = 0;
   private agentActive = new Map<string, number>();
@@ -20,9 +22,10 @@ export class Dispatcher {
   private retryTimers = new Map<string, NodeJS.Timeout>();
   private listeners = new Set<(task: Task) => void>();
 
-  constructor(opts: DispatcherOptions = {}) {
-    this.registry = new AgentRegistry();
-    this.store = new TaskStore();
+  constructor(opts: DispatcherOptions & { dbPath?: string } = {}) {
+    this.db = openDatabase(opts.dbPath);
+    this.registry = new AgentRegistry(this.db);
+    this.store = new TaskStore(this.db);
     this.skills = new SkillRegistry();
     this.maxConcurrency = opts.maxConcurrency ?? 4;
   }

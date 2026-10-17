@@ -1,8 +1,32 @@
+// src/agents/registry.ts
 import { randomUUID } from "node:crypto";
 import type { Agent, AgentConfig } from "../types.js";
+import type { DatabaseSync } from "node:sqlite";
 
 export class AgentRegistry {
   private agents = new Map<string, Agent>();
+  private db: DatabaseSync;
+
+  constructor(db: DatabaseSync) {
+    this.db = db;
+    this.load();
+  }
+
+  private load() {
+    const rows = this.db.prepare("SELECT * FROM agents").all() as any[];
+    for (const r of rows) {
+      const agent: Agent = {
+        id: r.id,
+        name: r.name,
+        description: r.description ?? undefined,
+        config: JSON.parse(r.config),
+        concurrency: r.concurrency ?? 1,
+        tags: r.tags ? JSON.parse(r.tags) : undefined,
+        createdAt: r.createdAt,
+      };
+      this.agents.set(agent.id, agent);
+    }
+  }
 
   register(input: {
     id?: string;
@@ -23,11 +47,15 @@ export class AgentRegistry {
       tags: input.tags,
       createdAt: Date.now(),
     };
+    this.db.prepare(
+      "INSERT INTO agents (id,name,description,config,concurrency,tags,createdAt) VALUES (?,?,?,?,?,?,?)"
+    ).run(agent.id, agent.name, agent.description ?? null, JSON.stringify(agent.config), agent.concurrency ?? 1, agent.tags ? JSON.stringify(agent.tags) : null, agent.createdAt);
     this.agents.set(id, agent);
     return agent;
   }
 
   unregister(id: string): boolean {
+    this.db.prepare("DELETE FROM agents WHERE id=?").run(id);
     return this.agents.delete(id);
   }
 
@@ -46,6 +74,9 @@ export class AgentRegistry {
     const a = this.agents.get(id);
     if (!a) throw new Error(`Agent not found: ${id}`);
     const updated: Agent = { ...a, ...patch, config: patch.config ?? a.config };
+    this.db.prepare(
+      "UPDATE agents SET name=?,description=?,config=?,concurrency=?,tags=? WHERE id=?"
+    ).run(updated.name, updated.description ?? null, JSON.stringify(updated.config), updated.concurrency ?? 1, updated.tags ? JSON.stringify(updated.tags) : null, id);
     this.agents.set(id, updated);
     return updated;
   }

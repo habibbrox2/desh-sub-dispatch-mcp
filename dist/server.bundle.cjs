@@ -48188,6 +48188,26 @@ var EMPTY_COMPLETION_RESULT = {
 var import_node_crypto2 = require("node:crypto");
 var AgentRegistry = class {
   agents = /* @__PURE__ */ new Map();
+  db;
+  constructor(db) {
+    this.db = db;
+    this.load();
+  }
+  load() {
+    const rows = this.db.prepare("SELECT * FROM agents").all();
+    for (const r of rows) {
+      const agent = {
+        id: r.id,
+        name: r.name,
+        description: r.description ?? void 0,
+        config: JSON.parse(r.config),
+        concurrency: r.concurrency ?? 1,
+        tags: r.tags ? JSON.parse(r.tags) : void 0,
+        createdAt: r.createdAt
+      };
+      this.agents.set(agent.id, agent);
+    }
+  }
   register(input) {
     const id = input.id ?? (0, import_node_crypto2.randomUUID)();
     if (this.agents.has(id)) throw new Error(`Agent already exists: ${id}`);
@@ -48200,10 +48220,14 @@ var AgentRegistry = class {
       tags: input.tags,
       createdAt: Date.now()
     };
+    this.db.prepare(
+      "INSERT INTO agents (id,name,description,config,concurrency,tags,createdAt) VALUES (?,?,?,?,?,?,?)"
+    ).run(agent.id, agent.name, agent.description ?? null, JSON.stringify(agent.config), agent.concurrency ?? 1, agent.tags ? JSON.stringify(agent.tags) : null, agent.createdAt);
     this.agents.set(id, agent);
     return agent;
   }
   unregister(id) {
+    this.db.prepare("DELETE FROM agents WHERE id=?").run(id);
     return this.agents.delete(id);
   }
   get(id) {
@@ -48219,6 +48243,9 @@ var AgentRegistry = class {
     const a = this.agents.get(id);
     if (!a) throw new Error(`Agent not found: ${id}`);
     const updated = { ...a, ...patch, config: patch.config ?? a.config };
+    this.db.prepare(
+      "UPDATE agents SET name=?,description=?,config=?,concurrency=?,tags=? WHERE id=?"
+    ).run(updated.name, updated.description ?? null, JSON.stringify(updated.config), updated.concurrency ?? 1, updated.tags ? JSON.stringify(updated.tags) : null, id);
     this.agents.set(id, updated);
     return updated;
   }
@@ -48228,6 +48255,63 @@ var AgentRegistry = class {
 var import_node_crypto3 = require("node:crypto");
 var TaskStore = class {
   tasks = /* @__PURE__ */ new Map();
+  db;
+  constructor(db) {
+    this.db = db;
+    this.load();
+  }
+  load() {
+    const rows = this.db.prepare("SELECT * FROM tasks").all();
+    for (const r of rows) {
+      const task = {
+        id: r.id,
+        agentId: r.agentId,
+        input: r.input ? JSON.parse(r.input) : void 0,
+        priority: r.priority ?? 0,
+        timeoutMs: r.timeoutMs ?? 6e4,
+        retries: r.retries ?? 0,
+        retryDelayMs: r.retryDelayMs ?? 1e3,
+        dependencies: r.dependencies ? JSON.parse(r.dependencies) : [],
+        metadata: r.metadata ? JSON.parse(r.metadata) : void 0,
+        status: r.status,
+        attempts: r.attempts,
+        result: r.result ? JSON.parse(r.result) : void 0,
+        createdAt: r.createdAt,
+        startedAt: r.startedAt ?? void 0,
+        finishedAt: r.finishedAt ?? void 0,
+        cancelRequested: !!r.cancelRequested
+      };
+      this.tasks.set(task.id, task);
+    }
+  }
+  persist(task) {
+    this.db.prepare(
+      `INSERT INTO tasks (id,agentId,input,priority,timeoutMs,retries,retryDelayMs,dependencies,metadata,status,attempts,result,createdAt,startedAt,finishedAt,cancelRequested)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       ON CONFLICT(id) DO UPDATE SET
+         agentId=excluded.agentId, input=excluded.input, priority=excluded.priority, timeoutMs=excluded.timeoutMs,
+         retries=excluded.retries, retryDelayMs=excluded.retryDelayMs, dependencies=excluded.dependencies,
+         metadata=excluded.metadata, status=excluded.status, attempts=excluded.attempts, result=excluded.result,
+         startedAt=excluded.startedAt, finishedAt=excluded.finishedAt, cancelRequested=excluded.cancelRequested`
+    ).run(
+      task.id,
+      task.agentId,
+      task.input !== void 0 ? JSON.stringify(task.input) : null,
+      task.priority ?? 0,
+      task.timeoutMs ?? 6e4,
+      task.retries ?? 0,
+      task.retryDelayMs ?? 1e3,
+      JSON.stringify(task.dependencies ?? []),
+      task.metadata ? JSON.stringify(task.metadata) : null,
+      task.status,
+      task.attempts,
+      task.result ? JSON.stringify(task.result) : null,
+      task.createdAt,
+      task.startedAt ?? null,
+      task.finishedAt ?? null,
+      task.cancelRequested ? 1 : 0
+    );
+  }
   create(spec) {
     const id = spec.id ?? (0, import_node_crypto3.randomUUID)();
     if (this.tasks.has(id)) throw new Error(`Task already exists: ${id}`);
@@ -48244,6 +48328,7 @@ var TaskStore = class {
       dependencies: spec.dependencies ?? []
     };
     this.tasks.set(id, task);
+    this.persist(task);
     return task;
   }
   get(id) {
@@ -48260,12 +48345,15 @@ var TaskStore = class {
     if (!t) throw new Error(`Task not found: ${id}`);
     const updated = { ...t, ...patch };
     this.tasks.set(id, updated);
+    this.persist(updated);
     return updated;
   }
   delete(id) {
+    this.db.prepare("DELETE FROM tasks WHERE id=?").run(id);
     return this.tasks.delete(id);
   }
   clear() {
+    this.db.exec("DELETE FROM tasks");
     this.tasks.clear();
   }
   size() {
@@ -48515,11 +48603,49 @@ var SkillRegistry = class {
   }
 };
 
+// src/persistence/database.ts
+var import_node_sqlite = require("node:sqlite");
+function openDatabase(path) {
+  const dbPath = path ?? process.env.DESH_DB_PATH ?? "./desh-sub-dispatch.db";
+  const db = new import_node_sqlite.DatabaseSync(dbPath);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS agents (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      config TEXT NOT NULL,
+      concurrency INTEGER,
+      tags TEXT,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY,
+      agentId TEXT NOT NULL,
+      input TEXT,
+      priority INTEGER,
+      timeoutMs INTEGER,
+      retries INTEGER,
+      retryDelayMs INTEGER,
+      dependencies TEXT,
+      metadata TEXT,
+      status TEXT NOT NULL,
+      attempts INTEGER NOT NULL,
+      result TEXT,
+      createdAt INTEGER NOT NULL,
+      startedAt INTEGER,
+      finishedAt INTEGER,
+      cancelRequested INTEGER
+    );
+  `);
+  return db;
+}
+
 // src/dispatcher/dispatcher.ts
 var Dispatcher = class {
   registry;
   store;
   skills;
+  db;
   maxConcurrency;
   active = 0;
   agentActive = /* @__PURE__ */ new Map();
@@ -48527,8 +48653,9 @@ var Dispatcher = class {
   retryTimers = /* @__PURE__ */ new Map();
   listeners = /* @__PURE__ */ new Set();
   constructor(opts = {}) {
-    this.registry = new AgentRegistry();
-    this.store = new TaskStore();
+    this.db = openDatabase(opts.dbPath);
+    this.registry = new AgentRegistry(this.db);
+    this.store = new TaskStore(this.db);
     this.skills = new SkillRegistry();
     this.maxConcurrency = opts.maxConcurrency ?? 4;
   }
@@ -48956,6 +49083,17 @@ async function runStdio() {
 async function runHttp2() {
   const app = (0, import_express.default)();
   app.use(import_express.default.json({ limit: "10mb" }));
+  const authToken = process.env.MCP_AUTH_TOKEN;
+  if (authToken) {
+    const guard = (req, res, next) => {
+      const h = req.headers["authorization"] || "";
+      if (h === `Bearer ${authToken}`) return next();
+      res.status(401).json({ error: "Unauthorized" });
+    };
+    app.use("/mcp", guard);
+    app.use("/sse", guard);
+    app.use("/messages", guard);
+  }
   const sessions = /* @__PURE__ */ new Map();
   app.post("/mcp", async (req, res) => {
     const sessionId = req.headers["mcp-session-id"];

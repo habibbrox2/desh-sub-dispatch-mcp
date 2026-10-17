@@ -31,6 +31,18 @@ async function runHttp() {
   const app = express();
   app.use(express.json({ limit: "10mb" }));
 
+  const authToken = process.env.MCP_AUTH_TOKEN;
+  if (authToken) {
+    const guard = (req: any, res: any, next: any) => {
+      const h = req.headers["authorization"] || "";
+      if (h === `Bearer ${authToken}`) return next();
+      res.status(401).json({ error: "Unauthorized" });
+    };
+    app.use("/mcp", guard);
+    app.use("/sse", guard);
+    app.use("/messages", guard);
+  }
+
   const sessions = new Map<string, { transport: StreamableHTTPServerTransport; server: any }>();
 
   app.post("/mcp", async (req, res) => {

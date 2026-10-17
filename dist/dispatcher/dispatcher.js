@@ -2,10 +2,12 @@ import { AgentRegistry } from "../agents/registry.js";
 import { TaskStore } from "./taskStore.js";
 import { executeAgent } from "./executor.js";
 import { SkillRegistry } from "../skills/registry.js";
+import { openDatabase } from "../persistence/database.js";
 export class Dispatcher {
     registry;
     store;
     skills;
+    db;
     maxConcurrency;
     active = 0;
     agentActive = new Map();
@@ -13,8 +15,9 @@ export class Dispatcher {
     retryTimers = new Map();
     listeners = new Set();
     constructor(opts = {}) {
-        this.registry = new AgentRegistry();
-        this.store = new TaskStore();
+        this.db = openDatabase(opts.dbPath);
+        this.registry = new AgentRegistry(this.db);
+        this.store = new TaskStore(this.db);
         this.skills = new SkillRegistry();
         this.maxConcurrency = opts.maxConcurrency ?? 4;
     }
