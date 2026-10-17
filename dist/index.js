@@ -98,12 +98,17 @@ async function runHttp() {
         }
         await transport.handlePostMessage(req, res, req.body);
     });
-    app.get("/health", (_req, res) => res.json({ ok: true }));
+    app.get("/health", (_req, res) => res.json({ ok: true, uptime: process.uptime(), timestamp: Date.now() }));
+    app.get("/metrics", (_req, res) => {
+        res.type("text/plain").send(`# HELP desh_uptime_seconds Process uptime\n# TYPE desh_uptime_seconds gauge\ndesh_uptime_seconds ${process.uptime()}\n`);
+    });
     const port = Number(process.env.PORT ?? 3000);
     app.listen(port, () => {
         console.error(`MCP HTTP server listening on http://localhost:${port}/mcp`);
     });
 }
+process.on("SIGTERM", () => { console.error("SIGTERM received, shutting down"); process.exit(0); });
+process.on("SIGINT", () => { console.error("SIGINT received, shutting down"); process.exit(0); });
 if (transportMode === "stdio") {
     runStdio().catch((e) => { console.error(e); process.exit(1); });
 }
