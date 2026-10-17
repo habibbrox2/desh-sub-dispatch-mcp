@@ -41,6 +41,21 @@ node dist/server.bundle.cjs --print-config
 
 ---
 
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TRANSPORT` | `stdio` | `stdio` or `http` |
+| `PORT` | `3000` | HTTP port |
+| `MCP_AUTH_TOKEN` | (none) | Bearer token required for `/mcp`, `/sse`, `/messages` when set |
+| `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
+| `CORS_ORIGIN` | `*` | CORS allowed origin |
+| `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |
+
+## Live Deployment
+
+Hosted MCP endpoint: `https://deshdsp.fly.dev/mcp` (health: `https://deshdsp.fly.dev/health`)
+
 ## 🔌 Connect to Any Coding Agent
 
 Works with Cursor, Windsurf, Cline, Continue, Zed, VS Code, Claude Code, OpenCode, and more.
