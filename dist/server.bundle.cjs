@@ -19203,7 +19203,7 @@ var require_view = __commonJS({
     var dirname = path.dirname;
     var basename = path.basename;
     var extname = path.extname;
-    var join = path.join;
+    var join2 = path.join;
     var resolve = path.resolve;
     module2.exports = View;
     function View(name, options) {
@@ -19265,12 +19265,12 @@ var require_view = __commonJS({
     };
     View.prototype.resolve = function resolve2(dir, file) {
       var ext = this.ext;
-      var path2 = join(dir, file);
+      var path2 = join2(dir, file);
       var stat = tryStat(path2);
       if (stat && stat.isFile()) {
         return path2;
       }
-      path2 = join(dir, basename(file, ext), "index" + ext);
+      path2 = join2(dir, basename(file, ext), "index" + ext);
       stat = tryStat(path2);
       if (stat && stat.isFile()) {
         return path2;
@@ -23285,7 +23285,7 @@ var require_send = __commonJS({
     var Stream = require("stream");
     var util2 = require("util");
     var extname = path.extname;
-    var join = path.join;
+    var join2 = path.join;
     var normalize = path.normalize;
     var resolve = path.resolve;
     var sep = path.sep;
@@ -23457,7 +23457,7 @@ var require_send = __commonJS({
           return res;
         }
         parts = path2.split(sep);
-        path2 = normalize(join(root, path2));
+        path2 = normalize(join2(root, path2));
       } else {
         if (UP_PATH_REGEXP.test(path2)) {
           debug('malicious path "%s"', path2);
@@ -23590,7 +23590,7 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join(path2, self._index[i]);
+        var p = join2(path2, self._index[i]);
         debug('stat "%s"', p);
         fs.stat(p, function(err2, stat) {
           if (err2) return next(err2);
@@ -40022,6 +40022,8 @@ data: ${JSON.stringify(message)}
 // src/index.ts
 var import_express = __toESM(require_express2(), 1);
 var import_node_crypto4 = require("node:crypto");
+var import_node_fs = require("node:fs");
+var import_node_path = require("node:path");
 
 // node_modules/zod/v3/external.js
 var external_exports = {};
@@ -49129,6 +49131,21 @@ function createServer2(opts) {
 }
 
 // src/index.ts
+function loadHomeHtml() {
+  const candidates = [
+    (0, import_node_path.join)(process.cwd(), "docs", "index.html"),
+    (0, import_node_path.join)(process.cwd(), "index.html"),
+    (0, import_node_path.join)(process.cwd(), "..", "docs", "index.html")
+  ];
+  for (const c of candidates) {
+    try {
+      if ((0, import_node_fs.existsSync)(c)) return (0, import_node_fs.readFileSync)(c, "utf8");
+    } catch {
+    }
+  }
+  return "<!DOCTYPE html><html><head><title>DeshSubDispatch</title></head><body><h1>DeshSubDispatch</h1><p>MCP server. See /health and /mcp.</p></body></html>";
+}
+var HOME_HTML = loadHomeHtml();
 if (process.argv.includes("--print-config")) {
   const cfg = {
     mcpServers: {
@@ -49261,13 +49278,8 @@ desh_uptime_seconds ${process.uptime()}
 `
     );
   });
-  app.get("/dashboard", (_req, res) => {
-    res.type("html").send(`<!DOCTYPE html><html><head><title>DeshSubDispatch Dashboard</title></head><body>
-<h1>DeshSubDispatch Dashboard</h1>
-<p>Uptime: <span id="up"></span>s</p>
-<script>fetch('/health').then(r=>r.json()).then(d=>{document.getElementById('up').textContent=d.uptime.toFixed(1);});</script>
-</body></html>`);
-  });
+  app.get("/", (_req, res) => res.type("html").send(HOME_HTML));
+  app.get("/dashboard", (_req, res) => res.type("html").send(HOME_HTML));
   const port = Number(process.env.PORT ?? 3e3);
   app.listen(port, () => {
     console.error(`MCP HTTP server listening on http://localhost:${port}/mcp`);

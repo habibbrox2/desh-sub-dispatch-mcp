@@ -4,7 +4,23 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
 import { randomUUID } from "node:crypto";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { createServer } from "./server.js";
+
+// Load the shared homepage HTML (same design as GitHub Pages)
+function loadHomeHtml(): string {
+  const candidates = [
+    join(process.cwd(), "docs", "index.html"),
+    join(process.cwd(), "index.html"),
+    join(process.cwd(), "..", "docs", "index.html"),
+  ];
+  for (const c of candidates) {
+    try { if (existsSync(c)) return readFileSync(c, "utf8"); } catch {}
+  }
+  return "<!DOCTYPE html><html><head><title>DeshSubDispatch</title></head><body><h1>DeshSubDispatch</h1><p>MCP server. See /health and /mcp.</p></body></html>";
+}
+const HOME_HTML = loadHomeHtml();
 
 if (process.argv.includes("--print-config")) {
   const cfg = {
@@ -140,13 +156,8 @@ async function runHttp() {
       `# HELP desh_uptime_seconds Process uptime\n# TYPE desh_uptime_seconds gauge\ndesh_uptime_seconds ${process.uptime()}\n`
     );
   });
-  app.get("/dashboard", (_req, res) => {
-    res.type("html").send(`<!DOCTYPE html><html><head><title>DeshSubDispatch Dashboard</title></head><body>
-<h1>DeshSubDispatch Dashboard</h1>
-<p>Uptime: <span id="up"></span>s</p>
-<script>fetch('/health').then(r=>r.json()).then(d=>{document.getElementById('up').textContent=d.uptime.toFixed(1);});</script>
-</body></html>`);
-  });
+  app.get("/", (_req, res) => res.type("html").send(HOME_HTML));
+  app.get("/dashboard", (_req, res) => res.type("html").send(HOME_HTML));
 
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {
