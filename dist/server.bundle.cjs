@@ -48927,7 +48927,7 @@ function registerTools(server, dispatcher) {
 function createServer2(opts) {
   const dispatcher = new Dispatcher({ maxConcurrency: opts?.maxConcurrency ?? 4 });
   const server = new McpServer(
-    { name: "sub-agent-dispatcher", version: "0.1.0" },
+    { name: "DeshSubDispatch", version: "0.1.0" },
     { capabilities: { tools: {}, resources: {}, prompts: {} }, instructions: "Hybrid sub-agent dispatcher. Register agents (llm/process/http) or use skills, then dispatch tasks with orchestration." }
   );
   registerTools(server, dispatcher);
