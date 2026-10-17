@@ -30,6 +30,16 @@ export class Dispatcher {
     this.maxConcurrency = opts.maxConcurrency ?? 4;
   }
 
+  /** Public snapshot of dispatcher state (used by get_dispatcher_stats). */
+  getStats(): { maxConcurrency: number; active: number; tasks: number; agents: number } {
+    return {
+      maxConcurrency: this.maxConcurrency,
+      active: this.active,
+      tasks: this.store.size(),
+      agents: this.registry.list().length,
+    };
+  }
+
   onTaskChange(cb: (task: Task) => void): () => void {
     this.listeners.add(cb);
     return () => this.listeners.delete(cb);
