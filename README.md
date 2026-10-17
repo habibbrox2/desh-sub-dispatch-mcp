@@ -7,7 +7,7 @@
 ![MCP](https://img.shields.io/badge/MCP-compatible-blue)
 ![Made in Bangladesh](https://img.shields.io/badge/Made%20in-Bangladesh-red)
 
-> 🇧🇩 [বাংলা README](./README.bn.md) | 🌐 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/) | [Live (Fly.io)](https://deshdsp.fly.dev)
+> 🇧🇩 [বাংলা README](./README.bn.md) | 📖 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/) | 🚀 [Live (Fly.io)](https://deshdsp.fly.dev)
 
 ---
 
@@ -22,7 +22,7 @@
 
 ---
 
-## 🚀 Quick Start
+## ⚡ Quick Start
 
 ```bash
 # Build
@@ -40,27 +40,6 @@ node dist/server.bundle.cjs --print-config
 ```
 
 ---
-
-## No API Key Required
-
-This MCP server works out of the box without any API key. Process agents and HTTP agents run without external credentials. LLM agents (OpenAI, Anthropic, etc.) only need an API key if you choose to use them.
-
-`MCP_AUTH_TOKEN` is **optional** — when set, it protects the HTTP `/mcp` endpoint with Bearer token auth. When not set (default), the endpoint is open.
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TRANSPORT` | `stdio` | `stdio` or `http` |
-| `PORT` | `3000` | HTTP port |
-| `MCP_AUTH_TOKEN` | (none) | Bearer token required for `/mcp`, `/sse`, `/messages` when set |
-| `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
-| `CORS_ORIGIN` | `*` | CORS allowed origin |
-| `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |
-
-## Live Deployment
-
-Hosted MCP endpoint: `https://deshdsp.fly.dev/mcp` (health: `https://deshdsp.fly.dev/health`)
 
 ## 🔌 Connect to Any Coding Agent
 
@@ -94,19 +73,44 @@ HTTP mode (endpoints: `/mcp`, `/sse`, `/messages`, `/health`):
 
 ---
 
+## 🔑 No API Key Required
+
+This MCP server works out of the box without any API key. Process agents and HTTP agents run without external credentials. LLM agents (OpenAI, Anthropic, etc.) only need an API key if you choose to use them.
+
+`MCP_AUTH_TOKEN` is **optional** — when set, it protects the HTTP `/mcp` endpoint with Bearer token auth. When not set (default), the endpoint is open.
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TRANSPORT` | `stdio` | `stdio` or `http` |
+| `PORT` | `3000` | HTTP port |
+| `MCP_AUTH_TOKEN` | (none) | Bearer token required for `/mcp`, `/sse`, `/messages` when set |
+| `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
+| `CORS_ORIGIN` | `*` | CORS allowed origin |
+| `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |
+
+## Live Deployment
+
+Hosted MCP endpoint: `https://deshdsp.fly.dev/mcp` (health: `https://deshdsp.fly.dev/health`)
+
+---
+
 ## 🛠️ Main Tools
 
 | Tool | Description |
 |------|-------------|
 | `register_agent` | Register a new agent |
-| `register_agent_from_skill` | Create an agent from a skill preset |
-| `list_skills` / `get_skill` | List / inspect skills |
+| `unregister_agent` | Remove a registered agent |
+| `list_agents` / `get_agent` | List / inspect agents |
 | `dispatch_task` | Dispatch a single task |
 | `dispatch_batch` | Dispatch multiple tasks at once |
 | `dispatch_workflow` | DAG workflow |
 | `get_task_status` / `get_task_result` | Status & result (with wait support) |
 | `cancel_task` / `retry_task` | Cancel & retry |
 | `list_tasks` / `get_dispatcher_stats` | Task list & stats |
+| `list_skills` / `get_skill` | List / inspect skills |
+| `register_agent_from_skill` | Create an agent from a skill preset |
 
 ---
 
@@ -132,7 +136,7 @@ DeshSubDispatch is an open-source initiative for the Bangladeshi developer commu
 
 ---
 
-## 📜 License
+## 📄 License
 
 MIT © Habibur Rahman — Bangladesh 🇧🇩
 

@@ -54,6 +54,20 @@ footer{text-align:center;color:var(--muted);padding:2rem 0;border-top:1px solid 
   </section>
 
   <section>
+    <h2>🌐 Public MCP Endpoint (No Auth)</h2>
+    <p>Connect from any MCP client — no API key, no signup, no payment required.</p>
+    <pre>{
+  "mcpServers": {
+    "DeshSubDispatch": {
+      "type": "http",
+      "url": "https://deshdsp.fly.dev/mcp"
+    }
+  }
+}</pre>
+    <p>Health: <code>https://deshdsp.fly.dev/health</code></p>
+  </section>
+
+  <section>
     <h2>Quick Start</h2>
     <pre>node server.bundle.cjs --http
 # or

@@ -1,49 +1,51 @@
-# 🇧🇩 DeshSubDispatch — বাংলাদেশের Open Source MCP সার্ভার
+# 🇧🇩 DeshSubDispatch — বাংলাদেশের Open Source MCP Server
 
-> **DeshSubDispatch** হলো একটি সম্পূর্ণ স্বয়ংসম্পূর্ণ (self-contained) Model Context Protocol (MCP) সার্ভার, যা যেকোনো কোডিং এজেন্টের সাথে কানেক্ট করে হাইব্রিড সাব-এজেন্ট (LLM, প্রসেস, HTTP) ডিসপ্যাচ ও অর্কেস্ট্রেশন করতে পারে।
+> **DeshSubDispatch** হলো একটি সম্পূর্ণ self-contained Model Context Protocol (MCP) server যা যেকোনো coding agent-এর সাথে কানেক্ট হয়ে hybrid sub-agents (LLM, process, HTTP) dispatch ও orchestrate করে।
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)
 ![MCP](https://img.shields.io/badge/MCP-compatible-blue)
 ![Made in Bangladesh](https://img.shields.io/badge/Made%20in-Bangladesh-red)
 
----
-
-> 🌐 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/) | [Live (Fly.io)](https://deshdsp.fly.dev)
-
-## ✨ বৈশিষ্ট্যসমূহ
-
-- 🔀 **হাইব্রিড এজেন্ট**: LLM (OpenAI/Anthropic/Generic), প্রসেস (child process), HTTP (remote endpoint)
-- 🧠 **সম্পূর্ণ অর্কেস্ট্রেশন**: প্রায়োরিটি কিউ, কনকারেন্সি লিমিট, ডিপেন্ডেন্সি (DAG ওয়ার্কফ্লো), রিট্রাই, টাইমআউট, ক্যান্সেল
-- 🧩 **স্কিল প্রিসেট**: রেডিমেড স্কিল (coder, researcher, summarizer, claude-coder ইত্যাদি)
-- 🌐 **সর্বজনীন কম্প্যাটিবিলিটি**: stdio, Streamable HTTP, এবং লেগাসি SSE ট্রান্সপোর্ট
-- 📦 **সম্পূর্ণ স্বয়ংসম্পূর্ণ**: একটি মাত্র bundle ফাইল, কোনো `node_modules` প্রয়োজন নেই
-- 🇧🇩 **বাংলাদেশের প্রেক্ষাপটে তৈরি**: বাংলাদেশি ডেভেলপারদের জন্য, বাংলাদেশের নামে
+> 🇧🇩 [English README](./README.md) | 📖 [GitHub Pages](https://habibbrox2.github.io/desh-sub-dispatch-mcp/) | 🚀 [Live (Fly.io)](https://deshdsp.fly.dev)
 
 ---
 
-## 🚀 দ্রুত শুরু
+## ✨ ফিচারসমূহ
+
+- 🔀 **Hybrid agents**: LLM (OpenAI/Anthropic/Generic), process (child process), HTTP (remote endpoint)
+- 🧠 **Full orchestration**: priority queue, concurrency limits, dependencies (DAG workflows), retries, timeouts, cancellation
+- 🧩 **Skill presets**: ready-made skills (coder, researcher, summarizer, claude-coder, etc.)
+- 🌐 **Universal compatibility**: stdio, Streamable HTTP, এবং legacy SSE transports
+- 📦 **Fully self-contained**: single bundle file, `node_modules` লাগবে না
+- 🇧🇩 **বাংলাদেশের জন্য**: বাংলাদেশি developers দ্বারা, বিশ্বের জন্য
+
+---
+
+## ⚡ Quick Start
 
 ```bash
-# বিল্ড
+# Build
 npm install
 npm run build
 
-# stdio (ডিফল্ট)
+# stdio (default)
 node dist/server.bundle.cjs
 
 # HTTP
 TRANSPORT=http PORT=3000 node dist/server.bundle.cjs
 
-# রেডি-টু-পেস্ট কনফিগ
+# Ready-to-paste config
 node dist/server.bundle.cjs --print-config
 ```
 
 ---
 
-## 🔌 যেকোনো কোডিং এজেন্টের সাথে কানেক্ট
+## 🔌 যেকোনো Coding Agent-এর সাথে কানেক্ট
 
-Cursor / Windsurf / Cline / Continue / Zed / VS Code / Claude Code / OpenCode — সবার জন্য stdio কনফিগ:
+Cursor, Windsurf, Cline, Continue, Zed, VS Code, Claude Code, OpenCode সহ আরও অনেক অ্যাপে কাজ করে।
+
+stdio config:
 
 ```json
 {
@@ -56,7 +58,7 @@ Cursor / Windsurf / Cline / Continue / Zed / VS Code / Claude Code / OpenCode �
 }
 ```
 
-HTTP মোডে কানেক্ট করতে (endpoint: `/mcp`, `/sse`, `/messages`, `/health`):
+HTTP mode (endpoints: `/mcp`, `/sse`, `/messages`, `/health`):
 
 ```json
 {
@@ -71,23 +73,48 @@ HTTP মোডে কানেক্ট করতে (endpoint: `/mcp`, `/sse`, 
 
 ---
 
-## 🛠️ প্রধান টুলসমূহ
+## 🔑 কোনো API Key লাগবে না
 
-| টুল | বর্ণনা |
-|-----|--------|
-| `register_agent` | নতুন এজেন্ট নিবন্ধন |
-| `register_agent_from_skill` | স্কিল প্রিসেট থেকে এজেন্ট তৈরি |
-| `list_skills` / `get_skill` | স্কিল তালিকা/বিস্তারিত |
-| `dispatch_task` | একটি টাস্ক ডিসপ্যাচ |
-| `dispatch_batch` | একাধিক টাস্ক একসাথে |
-| `dispatch_workflow` | DAG ওয়ার্কফ্লো |
-| `get_task_status` / `get_task_result` | স্ট্যাটাস ও ফলাফল (wait সাপোর্ট) |
-| `cancel_task` / `retry_task` | ক্যান্সেল ও রিট্রাই |
-| `list_tasks` / `get_dispatcher_stats` | টাস্ক তালিকা ও পরিসংখ্যান |
+এই MCP server কোনো API key ছাড়াই কাজ করে। Process agents এবং HTTP agents কোনো external credentials ছাড়াই চলে। LLM agents (OpenAI, Anthropic, etc.) শুধুমাত্র সেগুলো ব্যবহার করলে API key লাগবে।
+
+`MCP_AUTH_TOKEN` হলো **optional** — সেট করলে HTTP `/mcp` endpoint কে Bearer token auth দিয়ে সুরক্ষিত করে। সেট না করলে (default) endpoint উন্মুক্ত থাকে।
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TRANSPORT` | `stdio` | `stdio` or `http` |
+| `PORT` | `3000` | HTTP port |
+| `MCP_AUTH_TOKEN` | (none) | Bearer token required for `/mcp`, `/sse`, `/messages` when set |
+| `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
+| `CORS_ORIGIN` | `*` | CORS allowed origin |
+| `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |
+
+## Live Deployment
+
+Hosted MCP endpoint: `https://deshdsp.fly.dev/mcp` (health: `https://deshdsp.fly.dev/health`)
 
 ---
 
-## 🧩 এজেন্ট টাইপ
+## 🛠️ মূল টুলসমূহ
+
+| Tool | Description |
+|------|-------------|
+| `register_agent` | Register a new agent |
+| `unregister_agent` | Remove a registered agent |
+| `list_agents` / `get_agent` | List / inspect agents |
+| `dispatch_task` | Dispatch a single task |
+| `dispatch_batch` | Dispatch multiple tasks at once |
+| `dispatch_workflow` | DAG workflow |
+| `get_task_status` / `get_task_result` | Status & result (with wait support) |
+| `cancel_task` / `retry_task` | Cancel & retry |
+| `list_tasks` / `get_dispatcher_stats` | Task list & stats |
+| `list_skills` / `get_skill` | List / inspect skills |
+| `register_agent_from_skill` | Create an agent from a skill preset |
+
+---
+
+## 🧩 Agent Types
 
 - **llm**: `{ kind, provider: openai|anthropic|generic, model, apiKey?, baseUrl?, systemPrompt?, temperature?, maxTokens? }`
 - **process**: `{ kind, command, args?, cwd?, env?, shell? }`
@@ -95,24 +122,24 @@ HTTP মোডে কানেক্ট করতে (endpoint: `/mcp`, `/sse`, 
 
 ---
 
-## 🇧🇩 বাংলাদেশের Open Source অবদান
+## 🇧🇩 বাংলাদেশ Open Source Contribution
 
-DeshSubDispatch বাংলাদেশের ডেভেলপার কমিউনিটির জন্য একটি Open Source উদ্যোগ। আমরা বিশ্বাস করি প্রযুক্তি সবার জন্য উন্মুক্ত হওয়া উচিত। আপনার অবদান, ইস্যু রিপোর্ট, এবং পুল রিকোয়েস্ট স্বাগত।
+DeshSubDispatch হলো বাংলাদেশি developer কমিউনিটির জন্য open-source initiative। আমরা বিশ্বাস করি প্রযুক্তি সবার জন্য উন্মুক্ত হওয়া উচিত। Contributions, issue reports, এবং pull requests স্বাগতম।
 
-### অবদান রাখতে
+### কিভাবে অবদান রাখবেন
 
-1. রিপোজিটরি ফর্ক করুন
-2. ফিচার ব্রাঞ্চ তৈরি করুন (`git checkout -b feature/amazing`)
-3. কমিট করুন (`git commit -m 'Add amazing feature'`)
-4. পুশ করুন (`git push origin feature/amazing`)
-5. পুল রিকোয়েস্ট খুলুন
-
----
-
-## 📜 লাইসেন্স
-
-MIT © Habibur Rahman — বাংলাদেশ 🇧🇩
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing`)
+3. Commit (`git commit -m 'Add amazing feature'`)
+4. Push (`git push origin feature/amazing`)
+5. Open a Pull Request
 
 ---
 
-> *"প্রযুক্তি সবার জন্য, সবার হাতে"* — DeshSubDispatch
+## 📄 License
+
+MIT © Habibur Rahman — Bangladesh 🇧🇩
+
+---
+
+> *"Technology for everyone, in everyone's hands"* — DeshSubDispatch
