@@ -1,4 +1,6 @@
-# Sub-Agent Dispatcher MCP Server
+# DeshSubDispatch — Sub-Agent Dispatcher MCP Server
+
+> 🇧🇩 [বাংলা README](./README.bn.md)
 
 Hybrid sub-agent dispatcher with full orchestration (dependencies, retries, timeouts, priority, concurrency).
 
