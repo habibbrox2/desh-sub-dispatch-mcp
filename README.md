@@ -24,18 +24,16 @@
 
 ## 🔌 Configuration
 
-### Hosted MCP Endpoint (Bearer auth required)
+### Hosted MCP Endpoint (No Auth — Open)
 
-The hosted endpoint is authenticated by default. Set `MCP_AUTH_TOKEN` on the
-server and pass it as a header where your client supports it:
+The hosted endpoint is open by default. No API key, no signup, no payment required.
 
 ```json
 {
   "mcpServers": {
     "DeshSubDispatch": {
       "type": "http",
-      "url": "https://deshdsp.fly.dev/mcp",
-      "headers": { "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN" }
+      "url": "https://deshdsp.fly.dev/mcp"
     }
   }
 }
@@ -241,7 +239,7 @@ node dist/server.bundle.cjs --print-config
 
 No API key is needed to run the server. Process and HTTP agents run without external credentials; LLM agents (OpenAI, Anthropic, etc.) only need an API key if you choose to use them.
 
-HTTP mode is **authenticated by default**: `/mcp`, `/sse` and `/messages` require `Authorization: Bearer <token>`. If `MCP_AUTH_TOKEN` is unset, a random per-process token is generated and logged to stderr at startup. Set `MCP_AUTH_TOKEN` for a stable token, or `MCP_ALLOW_ANONYMOUS=1` to explicitly serve the MCP endpoints without auth (not recommended on the public internet). Local `stdio` mode needs no token.
+HTTP mode is **open by default**: `/mcp`, `/sse` and `/messages` work without any auth. Set `MCP_AUTH_TOKEN` to protect the endpoints with Bearer token auth (optional). Local `stdio` mode needs no token.
 
 ## Environment Variables
 
@@ -249,8 +247,7 @@ HTTP mode is **authenticated by default**: `/mcp`, `/sse` and `/messages` requir
 |----------|---------|-------------|
 | `TRANSPORT` | `stdio` | `stdio` or `http` |
 | `PORT` | `3000` | HTTP port |
-| `MCP_AUTH_TOKEN` | (auto-generated) | Bearer token for `/mcp`, `/sse`, `/messages`; when unset a random per-process token is generated and logged at startup |
-| `MCP_ALLOW_ANONYMOUS` | `0` | `1` serves the MCP endpoints without Bearer auth (ignored when `MCP_AUTH_TOKEN` is set) |
+| `MCP_AUTH_TOKEN` | (none) | When set, requires `Authorization: Bearer <token>` for `/mcp`, `/sse`, `/messages` |
 | `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
 | `CORS_ORIGIN` | `*` | CORS allowed origin |
 | `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |

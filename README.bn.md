@@ -24,18 +24,16 @@
 
 ## 🔌 কনফিগারেশন
 
-### Hosted MCP Endpoint (Bearer auth প্রয়োজন)
+### Hosted MCP Endpoint (No Auth — উন্মুক্ত)
 
-হোস্ট করা endpoint-এ ডিফল্টে authentication আছে। সার্ভারে `MCP_AUTH_TOKEN` সেট করুন
-এবং ক্লায়েন্ট সাপোর্ট করলে header হিসেবে পাঠান:
+হোস্ট করা endpoint-এ কোনো API key, signup, payment লাগবে না।
 
 ```json
 {
   "mcpServers": {
     "DeshSubDispatch": {
       "type": "http",
-      "url": "https://deshdsp.fly.dev/mcp",
-      "headers": { "Authorization": "Bearer YOUR_MCP_AUTH_TOKEN" }
+      "url": "https://deshdsp.fly.dev/mcp"
     }
   }
 }
@@ -241,7 +239,7 @@ node dist/server.bundle.cjs --print-config
 
 সার্ভার চালাতে কোনো API key লাগে না। Process agents এবং HTTP agents কোনো external credentials ছাড়াই চলে; LLM agents (OpenAI, Anthropic, etc.) শুধু ব্যবহার করলেই API key লাগে।
 
-HTTP mode এখন **ডিফল্টে authenticated**: `/mcp`, `/sse` এবং `/messages`-এ `Authorization: Bearer <token>` লাগে। `MCP_AUTH_TOKEN` সেট না থাকলে শুরুতে একটি random per-process টোকেন generate করে stderr-এ লগ করা হয়। স্থিতিশীল টোকেনের জন্য `MCP_AUTH_TOKEN` সেট করুন, অথবা `MCP_ALLOW_ANONYMOUS=1` দিয়ে টোকেন ছাড়াই এন্ডপয়েন্ট খোলা রাখুন (পাবলিক ইন্টারনেটে এটি সুপারিশযোগ্য নয়)। লোকাল `stdio` মোডে কোনো টোকেন লাগে না।
+HTTP mode এখন **ডিফল্টে উন্মুক্ত**: `/mcp`, `/sse` এবং `/messages` কোনো auth ছাড়াই কাজ করে। চাইলে `MCP_AUTH_TOKEN` সেট করে endpoints কে Bearer token auth দিয়ে সুরক্ষিত করা যায় (optional)। লোকাল `stdio` মোডে কোনো টোকেন লাগে না।
 
 ## Environment Variables
 
@@ -249,8 +247,7 @@ HTTP mode এখন **ডিফল্টে authenticated**: `/mcp`, `/sse` এ�
 |----------|---------|-------------|
 | `TRANSPORT` | `stdio` | `stdio` or `http` |
 | `PORT` | `3000` | HTTP port |
-| `MCP_AUTH_TOKEN` | (auto-generated) | `/mcp`, `/sse`, `/messages`-এর Bearer টোকেন; সেট না থাকলে শুরুতে random per-process টোকেন generate করে লগ হয় |
-| `MCP_ALLOW_ANONYMOUS` | `0` | `1` দিলে MCP endpoints Bearer auth ছাড়াই চলবে (`MCP_AUTH_TOKEN` সেট থাকলে উপেক্ষা করা হয়) |
+| `MCP_AUTH_TOKEN` | (none) | সেট করলে `/mcp`, `/sse`, `/messages`-এ `Authorization: Bearer <token>` প্রয়োজন |
 | `DESH_DB_PATH` | `./desh-sub-dispatch.db` | SQLite database path |
 | `CORS_ORIGIN` | `*` | CORS allowed origin |
 | `RATE_LIMIT_PER_MIN` | `0` (disabled) | Per-IP rate limit |
