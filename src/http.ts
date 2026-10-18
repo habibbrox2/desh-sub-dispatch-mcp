@@ -2,7 +2,7 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
-import { randomUUID, randomBytes, createHash, timingSafeEqual } from "node:crypto";
+import { randomUUID, createHash, timingSafeEqual } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createServer, type CreateServerOptions } from "./server.js";
@@ -64,18 +64,7 @@ export function createHttpApp(opts?: CreateServerOptions): express.Express {
     next();
   });
 
-  const authToken =
-    process.env.MCP_AUTH_TOKEN ??
-    (process.env.MCP_ALLOW_ANONYMOUS === "1" ? undefined : randomBytes(24).toString("base64url"));
-  app.locals.authToken = authToken;
-  if (authToken && !process.env.MCP_AUTH_TOKEN) {
-    console.error(JSON.stringify({
-      ts: Date.now(),
-      event: "ephemeral_auth_token",
-      token: authToken,
-      hint: "MCP_AUTH_TOKEN is unset, so this process generated a random one. Set MCP_AUTH_TOKEN for a stable token or MCP_ALLOW_ANONYMOUS=1 to disable Bearer auth.",
-    }));
-  }
+  const authToken = process.env.MCP_AUTH_TOKEN;
   const bearerMatches = (header: unknown, token: string): boolean => {
     if (typeof header !== "string" || !header.startsWith("Bearer ")) return false;
     const a = createHash("sha256").update(header.slice(7)).digest();

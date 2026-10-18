@@ -49467,16 +49467,7 @@ function createHttpApp(opts) {
     console.error(JSON.stringify({ ts: Date.now(), method: req.method, path: req.path, ip: req.ip }));
     next();
   });
-  const authToken = process.env.MCP_AUTH_TOKEN ?? (process.env.MCP_ALLOW_ANONYMOUS === "1" ? void 0 : (0, import_node_crypto4.randomBytes)(24).toString("base64url"));
-  app.locals.authToken = authToken;
-  if (authToken && !process.env.MCP_AUTH_TOKEN) {
-    console.error(JSON.stringify({
-      ts: Date.now(),
-      event: "ephemeral_auth_token",
-      token: authToken,
-      hint: "MCP_AUTH_TOKEN is unset, so this process generated a random one. Set MCP_AUTH_TOKEN for a stable token or MCP_ALLOW_ANONYMOUS=1 to disable Bearer auth."
-    }));
-  }
+  const authToken = process.env.MCP_AUTH_TOKEN;
   const bearerMatches = (header, token) => {
     if (typeof header !== "string" || !header.startsWith("Bearer ")) return false;
     const a = (0, import_node_crypto4.createHash)("sha256").update(header.slice(7)).digest();
